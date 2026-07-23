@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { graphBodies } from "../generated/graph/bodies";
 import { graphData } from "../generated/graph/data";
-import { GraphTag } from "../src/graph/graphTypes";
+import { GraphTag, type GraphData } from "../src/graph/graphTypes";
 
 const ROOT = process.cwd();
 const DIST = path.join(ROOT, "dist");
@@ -17,15 +17,16 @@ const TEXT_EXTENSIONS = new Set([
 ]);
 
 const failures: string[] = [];
-const nodeIds = new Set<string>(graphData.nodes.map((node) => node.id));
+const data = graphData as GraphData;
+const nodeIds = new Set<string>(data.nodes.map((node) => node.id));
 const bodyIds = Object.keys(graphBodies);
 
 if (!fs.existsSync(DIST)) fail("dist/ does not exist.");
 if (!fs.existsSync(path.join(DIST, "_headers")))
   fail("dist/_headers is missing.");
-if (!graphData.nodes.length) fail("published graph has no notes.");
+if (!data.nodes.length) fail("published graph has no notes.");
 
-for (const node of graphData.nodes) {
+for (const node of data.nodes) {
   if (node.tags.some(({ tag }) => String(tag) === GraphTag.Hidden))
     fail(`hidden note emitted: ${node.id}`);
   if (node.hasBody && !bodyIds.includes(node.id))
@@ -44,8 +45,8 @@ for (const id of bodyIds) {
   if (!nodeIds.has(id)) fail(`body emitted for unpublished note: ${id}`);
 }
 
-for (const link of graphData.links) {
-  if (!graphData.nodes[link.source] || !graphData.nodes[link.target])
+for (const link of data.links) {
+  if (!data.nodes[link.source] || !data.nodes[link.target])
     fail(`invalid graph link indexes: ${link.id}`);
 }
 
@@ -58,7 +59,9 @@ for (const file of fs.existsSync(DIST) ? walk(DIST) : []) {
   if (!TEXT_EXTENSIONS.has(path.extname(file))) continue;
 
   const text = fs.readFileSync(file, "utf8");
-  if (/\/Users\/[^/]+\/|working-notes\/vault|vault\/papers|backups\//.test(text))
+  if (
+    /\/Users\/[^/]+\/|working-notes\/vault|vault\/papers|backups\//.test(text)
+  )
     fail(`private local path leaked in ${rel}`);
   if (/sourceMappingURL=/.test(text)) fail(`source map reference in ${rel}`);
 }
@@ -70,7 +73,7 @@ if (failures.length) {
 }
 
 console.log(
-  `dist audit passed: ${graphData.nodes.length} notes, ${bodyIds.length} bodies`,
+  `dist audit passed: ${data.nodes.length} notes, ${bodyIds.length} bodies`,
 );
 
 function walk(dir: string): string[] {

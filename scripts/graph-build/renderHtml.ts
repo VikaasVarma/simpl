@@ -131,8 +131,7 @@ function renderToken(item: RenderToken | undefined): string {
 
 function connection(part: ConnectionPart, note: NoteDraft): string {
   const group = note.connections.find((item) => item.id === part.groupId);
-  if (!group)
-    throw new Error(`Missing connection group ${part.groupId} in ${note.id}.`);
+  if (!group) return renderMarkdownInline(part.text);
   const primary = group.connections[0]!;
   const icon = primary.icon;
   const colorIndex = primary.colorIndex;

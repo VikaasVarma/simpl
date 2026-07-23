@@ -97,18 +97,8 @@ function readTag(value: unknown, file: string): GraphNodeTag {
   if (typeof value !== "string") throw new Error(`Invalid tag in ${file}`);
 
   if (value === GraphTag.Hidden) return { tag: GraphTag.Hidden, body: "" };
-  if (value === GraphTag.Me) return { tag: GraphTag.Me, body: "" };
+  if (value === GraphTag.Root) return { tag: GraphTag.Root, body: "" };
   if (value === GraphTag.Published)
     return { tag: GraphTag.Published, body: "" };
-
-  const [tag, body, extra] = value.split("/");
-  if (
-    extra !== undefined ||
-    (tag !== GraphTag.Region && tag !== GraphTag.RegionHeader) ||
-    !body
-  ) {
-    throw new Error(`Unknown graph tag ${JSON.stringify(value)} in ${file}`);
-  }
-
-  return { tag, body };
+  throw new Error(`Unknown graph tag ${JSON.stringify(value)} in ${file}`);
 }

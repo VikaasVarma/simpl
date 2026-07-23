@@ -1,7 +1,7 @@
 ---
 id: me
 summary: Home note for the fixture graph.
-tags: [me, published]
+tags: [root, publish]
 link: /
 ---
 

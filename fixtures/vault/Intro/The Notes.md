@@ -1,7 +1,7 @@
 ---
 id: the-notes
 summary: How to write notes for the graph.
-tags: [published]
+tags: [publish]
 ---
 
 Each note needs frontmatter with an `id`. A `summary` is recommended.

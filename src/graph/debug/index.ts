@@ -1,4 +1,5 @@
 import type { GraphSceneApp, SceneState } from "../scene/types";
+import { graphMode } from "../data";
 
 const STORAGE_KEY = "working-notes:graph-debug:v1";
 
@@ -12,12 +13,21 @@ export function mountDebug(app: GraphSceneApp, state: SceneState): void {
   let fps = 0;
   let last = performance.now();
 
+  if (!enabled && graphMode() === "unofficial") {
+    setGraphMode("official");
+    return;
+  }
   apply();
   debug.toggle.addEventListener("click", () => {
     enabled = !enabled;
     localStorage.setItem(STORAGE_KEY, enabled ? "1" : "0");
+    if (!enabled && graphMode() === "unofficial") {
+      setGraphMode("official");
+      return;
+    }
     apply();
   });
+  debug.graphMode.addEventListener("click", switchGraphMode);
 
   requestAnimationFrame(tick);
 
@@ -45,6 +55,7 @@ export function mountDebug(app: GraphSceneApp, state: SceneState): void {
     set(debug.notes, app.nodes.length);
     set(debug.fps, fps);
     set(debug.regime, app.domNotes.debug || "unknown");
+    debug.graphMode.textContent = `graph: ${graphMode()}`;
   }
 }
 
@@ -56,6 +67,7 @@ type DebugPanel = {
   notes: HTMLElement;
   fps: HTMLElement;
   regime: HTMLElement;
+  graphMode: HTMLButtonElement;
   style: HTMLStyleElement;
 };
 
@@ -67,12 +79,16 @@ function createDebugPanel(): DebugPanel {
   const notes = row(body, "Notes");
   const fps = row(body, "FPS");
   const regime = row(body, "Regime");
+  const graphMode = document.createElement("button");
   const style = document.createElement("style");
 
   element.className = "graph-debug-panel";
   toggle.type = "button";
   toggle.className = "graph-debug-panel__toggle";
+  graphMode.type = "button";
+  graphMode.className = "graph-debug-panel__mode";
   body.className = "graph-debug-panel__body";
+  body.append(graphMode);
   element.append(toggle, body);
   style.textContent = `
     .graph-debug .graph-dom-note:not([hidden]) {
@@ -115,9 +131,32 @@ function createDebugPanel(): DebugPanel {
       justify-content: space-between;
       gap: 14px;
     }
+
+    .graph-debug-panel__mode {
+      width: 100%;
+      margin-top: 6px;
+      padding: 3px 5px;
+      border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font: inherit;
+      text-align: left;
+    }
   `;
 
-  return { element, toggle, body, htmlNotes, notes, fps, regime, style };
+  return {
+    element,
+    toggle,
+    body,
+    htmlNotes,
+    notes,
+    fps,
+    regime,
+    graphMode,
+    style,
+  };
 }
 
 function row(parent: HTMLElement, label: string): HTMLElement {
@@ -133,4 +172,15 @@ function row(parent: HTMLElement, label: string): HTMLElement {
 function set(element: HTMLElement, value: string | number): void {
   const text = String(value);
   if (element.textContent !== text) element.textContent = text;
+}
+
+function switchGraphMode(): void {
+  setGraphMode(graphMode() === "official" ? "unofficial" : "official");
+}
+
+function setGraphMode(mode: ReturnType<typeof graphMode>): void {
+  const url = new URL(location.href);
+  if (mode === "official") url.searchParams.delete("graph");
+  else url.searchParams.set("graph", mode);
+  location.href = url.toString();
 }

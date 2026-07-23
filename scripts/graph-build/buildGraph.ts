@@ -17,15 +17,10 @@ export function buildGraph(
   graphLinks: GraphLink[];
 } {
   const noteIds = new Set(notes.map((note) => note.id));
-  const hasPublishedNotes = notes.some((note) =>
-    hasTag(note, GraphTag.Published),
-  );
   const visibleNotes = notes.filter(
     (note) =>
       !hasTag(note, GraphTag.Hidden) &&
-      (!options.publishedOnly ||
-        !hasPublishedNotes ||
-        hasTag(note, GraphTag.Published)),
+      (!options.publishedOnly || hasTag(note, GraphTag.Published)),
   );
   const byId = new Map(visibleNotes.map((note, index) => [note.id, index]));
   const nodes: GraphNode[] = visibleNotes.map(
@@ -40,8 +35,8 @@ export function buildGraph(
       connections: note.connections
         .map((group) => ({
           ...group,
-          connections: group.connections.filter(
-            (connection) => byId.has(connection.target) || connection.href,
+          connections: group.connections.filter((connection) =>
+            byId.has(connection.target),
           ),
         }))
         .filter((group) => group.connections.length > 0),

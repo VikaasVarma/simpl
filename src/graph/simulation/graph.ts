@@ -3,7 +3,7 @@ import { seedPositions } from "../../../generated/graph/seedPositions";
 import type { SimLink, SimNode } from "./types";
 import { jitter } from "../utils/random";
 
-const FIXED_NODE_TAGS = new Set<`${GraphTag}`>([GraphTag.Me]);
+const FIXED_NODE_TAGS = new Set<`${GraphTag}`>([GraphTag.Root]);
 
 export function createGraph(data: GraphData): {
   nodes: SimNode[];

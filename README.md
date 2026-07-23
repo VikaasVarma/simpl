@@ -67,7 +67,7 @@ Every note is a markdown file with frontmatter:
 ---
 id: flow-matching
 summary: A short summary for title/summary regimes.
-tags: [region/distribution-mapping, published]
+tags: [publish]
 link: https://example.com
 ---
 
@@ -87,17 +87,11 @@ Optional:
 Useful tags:
 
 - `hidden`: never emit this note in a published graph.
-- `published`: if any note uses this tag, published builds emit only notes with
-  `published` and without `hidden`.
-- `me`: marks a home/person note.
-- `region/<name>`: groups a note semantically.
-- `region-header/<name>`: marks the main note for a region.
-
+- `publish`: emitted by published builds, unless the note is also `hidden`.
+- `root`: marks the home/root note.
 Current publish behavior:
 
-- If no notes use `published`, `--published` emits every non-hidden note.
-- If any notes use `published`, `--published` emits only published, non-hidden
-  notes.
+- `--published` emits only notes tagged `publish` and not tagged `hidden`.
 
 ## Link Syntax
 

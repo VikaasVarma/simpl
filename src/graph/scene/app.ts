@@ -11,9 +11,9 @@ import { bindDomNoteScroll } from "../rendering/dom/notes";
 import { loadSettings, saveSettings } from "./settings";
 import type { GraphSceneApp, SceneState } from "./types";
 
-export function mountGraphScene(): {
+export async function mountGraphScene(): Promise<{
   redraw: () => void;
-} {
+}> {
   const state: SceneState = {
     dirty: true,
     focusedNode: null,
@@ -26,7 +26,7 @@ export function mountGraphScene(): {
     drawnHtmlNotes: 0,
   };
 
-  const base = createSceneBase();
+  const base = await createSceneBase();
   let app: GraphSceneApp;
   let focus: ReturnType<typeof createFocusController>;
 
@@ -83,7 +83,7 @@ export function mountGraphScene(): {
   applyGraphTheme(app.renderer, app.view, state.settings.theme);
   focus.focusById();
   app.simulation.start("initial");
-  if (import.meta.env.DEV) {
+  if (import.meta.env.VITE_DEBUG === "1") {
     import("../debug").then(({ mountDebug }) => mountDebug(app, state));
   }
   requestAnimationFrame(render);
@@ -100,9 +100,9 @@ export function mountGraphScene(): {
 
   function updateBackButton(): void {
     const id = focus.previousId();
-    const title = id ? app.nodeById.get(id)!.title : "";
+    const title = id ? (app.nodeById.get(id)?.title ?? "") : "";
     app.hud.home.textContent = title ? `← ${title}` : "home";
-    app.hud.home.hidden = !title && state.focusedNode?.id === "me";
+    app.hud.home.hidden = !title;
   }
 }
 

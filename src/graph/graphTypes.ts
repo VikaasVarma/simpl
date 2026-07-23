@@ -1,9 +1,7 @@
 export enum GraphTag {
   Hidden = "hidden",
-  Me = "me",
-  Published = "published",
-  Region = "region",
-  RegionHeader = "region-header",
+  Root = "root",
+  Published = "publish",
 }
 
 export type GraphNodeTag = {

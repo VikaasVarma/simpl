@@ -1,6 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#f7f1e7"/>
-  <path d="M8 17c4-7 12-7 16 0" fill="none" stroke="#8a9a72" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="10" cy="19" r="2.5" fill="#38342d"/>
-  <circle cx="22" cy="19" r="2.5" fill="#38342d"/>
+<svg viewBox="60 95 672 420" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <g>
+    <polygon fill="#C22036" points="362.89,117.396 261.418,313.945 362.89,500.992 433.749,500.992 535.956,304.725 431.536,117.396"/>
+    <rect x="310.524" y="494.607" fill="#010101" width="170.723" height="12.77"/>
+    <line fill="none" stroke="#010101" stroke-width="13" stroke-miterlimit="10" x1="362.89" y1="498.438" x2="149.803" y2="111.009"/>
+    <line fill="none" stroke="#010101" stroke-width="13" stroke-miterlimit="10" x1="644.733" y1="111.009" x2="427.18" y2="503.548"/>
+    <rect x="310.098" y="104.623" fill="#010101" width="171.576" height="12.772"/>
+    <polygon fill="#010101" points="558.734,104.623 558.734,117.396 713.28,117.396 724.776,104.623"/>
+    <polygon fill="#010101" points="233.464,104.623 233.464,117.396 77.216,117.396 66.145,104.623"/>
+    <polygon fill="#010101" points="336.658,113.908 243.82,281.949 276.536,341.432 398.619,113.908"/>
+    <polygon fill="#010101" points="395.886,115.844 517.616,340.371 549.564,282.727 455.325,113.908"/>
+  </g>
 </svg>

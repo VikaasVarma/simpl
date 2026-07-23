@@ -1,4 +1,5 @@
 import type { GraphNode } from "../../graph/graphTypes";
+import { graphMode } from "../../graph/data";
 import {
   disposeVisualizations,
   mountVisualizations,
@@ -132,11 +133,17 @@ function isReader(body: HTMLElement): boolean {
 }
 
 async function loadBody(id: string): Promise<string> {
-  const cached = bodies.get(id);
+  const mode = graphMode();
+  const key = `${mode}:${id}`;
+  const cached = bodies.get(key);
   if (cached !== undefined) return cached;
-  const { graphBodies } = await import("../../../generated/graph/bodies");
+  const { graphBodies } = !import.meta.env.DEV
+    ? await import("../../../generated/graph/bodies")
+    : mode === "official"
+      ? await import("../../../generated/graph/published/bodies")
+      : await import("../../../generated/graph/unofficial/bodies");
   const html = (graphBodies as Record<string, string>)[id];
   if (html === undefined) throw new Error(`Missing generated body for ${id}.`);
-  bodies.set(id, html);
+  bodies.set(key, html);
   return html;
 }

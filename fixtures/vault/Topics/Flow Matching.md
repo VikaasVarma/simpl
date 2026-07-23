@@ -1,7 +1,7 @@
 ---
 id: flow-matching
 summary: A minimal math-heavy sample note.
-tags: [region/distribution-mapping, published]
+tags: [publish]
 link: https://arxiv.org/abs/2210.02747
 ---
 
