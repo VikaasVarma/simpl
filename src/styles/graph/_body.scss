@@ -1,0 +1,224 @@
+.graph-dom-note__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: var(--note-body-gap);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  user-select: none;
+  color: var(--text);
+  font: 400 var(--note-body-size) / 1.62 var(--font-serif);
+  text-align: left;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text) 18%, transparent) transparent;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0,
+    black calc(100% - var(--note-fade-height)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0,
+    black calc(100% - var(--note-fade-height)),
+    transparent 100%
+  );
+}
+
+.graph-dom-note.is-body-scrolled .graph-dom-note__body {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--note-body-top-fade),
+    black calc(100% - var(--note-fade-height)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--note-body-top-fade),
+    black calc(100% - var(--note-fade-height)),
+    transparent 100%
+  );
+}
+
+.graph-dom-note.is-body-at-bottom .graph-dom-note__body {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--note-body-top-fade),
+    black 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    black var(--note-body-top-fade),
+    black 100%
+  );
+}
+
+.graph-dom-note__body-inner {
+  padding-bottom: 4.5em;
+}
+
+.graph-dom-note__body p,
+.graph-dom-note__body ul,
+.graph-dom-note__body ol,
+.graph-dom-note__body .table-wrap,
+.graph-dom-note__body h3,
+.graph-dom-note__body h4,
+.graph-dom-note__body h5,
+.graph-dom-note__body h6,
+.graph-dom-note__body blockquote,
+.graph-dom-note__body hr,
+.graph-dom-note__body .code-block-wrap,
+.graph-dom-note__body .viz-figure {
+  max-width: min(var(--note-reading-col), 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.graph-dom-note__body p,
+.graph-dom-note__body ul,
+.graph-dom-note__body ol {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+.graph-dom-note__body h3,
+.graph-dom-note__body h4,
+.graph-dom-note__body h5,
+.graph-dom-note__body h6 {
+  margin-top: 1.2em;
+  margin-bottom: 0.45em;
+  line-height: 1.25;
+}
+
+.graph-dom-note__body a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.graph-dom-note__body .table-wrap {
+  overflow-x: auto;
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+.graph-dom-note__body table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.graph-dom-note__body th,
+.graph-dom-note__body td {
+  padding: 0.35em 0.7em;
+  border-bottom: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+  white-space: nowrap;
+}
+
+.graph-dom-note__body .muted {
+  color: var(--text-hint);
+}
+
+.graph-dom-note__body .diff-add {
+  padding: 0.04em 0.18em;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent-emphasis);
+}
+
+.graph-dom-note__body .social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05em;
+  height: 1.05em;
+  margin: 0 0.25em;
+  vertical-align: -0.18em;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.graph-dom-note__body .social-link:hover,
+.graph-dom-note__body .social-link:focus-visible {
+  color: var(--text);
+}
+
+.graph-dom-note__body .social-link__icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: currentColor;
+  -webkit-mask: var(--social-icon) center / contain no-repeat;
+  mask: var(--social-icon) center / contain no-repeat;
+}
+
+.graph-dom-note__body code {
+  padding: 0.08em 0.32em;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--border) 35%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+.graph-dom-note__body blockquote {
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+  padding-left: 1.5em;
+  border-left: 2px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.graph-dom-note__body hr {
+  height: 0;
+  margin-top: 2em;
+  margin-bottom: 2em;
+  border: 0;
+  border-top: 1px dashed color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+.graph-dom-note__body .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.38em 0;
+}
+
+.graph-dom-note__body .footnotes {
+  max-width: min(var(--note-reading-col), 100%);
+  margin: 0 auto;
+  color: var(--text-hint);
+  font-size: 0.78em;
+  line-height: 1.45;
+}
+
+.graph-dom-note__body .footnotes-sep {
+  max-width: min(var(--note-reading-col), 100%);
+  margin: 2em auto 0.75em;
+  border-top-style: solid;
+  border-top-color: color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+.graph-dom-note__body .footnotes ol {
+  margin: 0;
+  padding-left: 1.4em;
+}
+
+.graph-dom-note__body .footnotes li,
+.graph-dom-note__body .footnotes p {
+  margin-bottom: 0.45em;
+}
+
+.graph-dom-note__body .footnote-ref,
+.graph-dom-note__body .footnote-backref {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.72em;
+  text-decoration: none;
+}

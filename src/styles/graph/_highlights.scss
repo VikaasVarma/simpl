@@ -1,0 +1,71 @@
+.graph-highlight {
+  --c: var(--connection-0);
+  border-radius: 4px;
+  background-color: color-mix(in srgb, var(--c) 18%, transparent);
+  background-image: linear-gradient(var(--c), var(--c));
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 100% 0.12em;
+  color: inherit;
+  cursor: pointer;
+  padding: 0 0.12em 0.14em;
+  transition:
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.graph-highlight--multi {
+  background-color: color-mix(in srgb, var(--c0, var(--c)) 14%, transparent);
+  background-repeat: no-repeat;
+  background-size: 100% 0.12em;
+}
+
+.graph-highlight--multi[data-conn-count="2"] {
+  padding-bottom: 0.32em;
+  background-image:
+    linear-gradient(var(--c0), var(--c0)), linear-gradient(var(--c1), var(--c1));
+  background-position:
+    0 100%,
+    0 calc(100% - 0.2em);
+}
+
+.graph-highlight--multi[data-conn-count="3"] {
+  padding-bottom: 0.5em;
+  background-image:
+    linear-gradient(var(--c0), var(--c0)),
+    linear-gradient(var(--c1), var(--c1)), linear-gradient(var(--c2), var(--c2));
+  background-position:
+    0 100%,
+    0 calc(100% - 0.19em),
+    0 calc(100% - 0.38em);
+}
+
+.graph-highlight--multi[data-conn-count="4"] {
+  padding-bottom: 0.66em;
+  background-image:
+    linear-gradient(var(--c0), var(--c0)),
+    linear-gradient(var(--c1), var(--c1)),
+    linear-gradient(var(--c2), var(--c2)), linear-gradient(var(--c3), var(--c3));
+  background-position:
+    0 100%,
+    0 calc(100% - 0.18em),
+    0 calc(100% - 0.36em),
+    0 calc(100% - 0.54em);
+}
+
+.graph-highlight:hover,
+.graph-highlight.is-open {
+  background-color: color-mix(in srgb, var(--c) 36%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 12%, transparent);
+}
+
+.graph-highlight--multi:hover,
+.graph-highlight--multi.is-open {
+  background-color: color-mix(in srgb, var(--c0, var(--c)) 30%, transparent);
+}
+
+@for $i from 0 through 5 {
+  .graph-highlight[data-color="#{$i}"] {
+    --c: var(--connection-#{$i});
+  }
+}

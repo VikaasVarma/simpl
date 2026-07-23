@@ -1,0 +1,210 @@
+.graph-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.graph-hud button {
+  font: inherit;
+}
+
+.graph-hud__topbar {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  left: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.graph-hud__home {
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-style: italic;
+  pointer-events: auto;
+}
+
+.graph-hud__home:hover {
+  color: var(--accent-emphasis);
+}
+
+.graph-hud__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.graph-hud__search-button {
+  display: inline-flex;
+  min-width: 220px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 5px 12px;
+  border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+}
+
+.graph-hud__search-button:hover,
+.graph-hud__search-button:focus {
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+  color: var(--accent);
+  outline: none;
+}
+
+.graph-hud__search-button kbd {
+  margin-left: 4px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--text) 6%, transparent);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+.graph-hud__settings {
+  display: flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+}
+
+.graph-hud__settings:hover {
+  border-color: var(--accent);
+  color: var(--accent-emphasis);
+}
+
+.graph-hud__panel {
+  position: absolute;
+  top: 56px;
+  right: 22px;
+  display: flex;
+  width: 286px;
+  flex-direction: column;
+  gap: 15px;
+  padding: 18px 20px 16px;
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  box-shadow:
+    0 1px 2px color-mix(in srgb, var(--text) 8%, transparent),
+    0 16px 36px color-mix(in srgb, var(--text) 12%, transparent);
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-size: 14px;
+  pointer-events: auto;
+  transform-origin: top right;
+  animation: graph-hud-panel-in 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
+  backdrop-filter: blur(14px) saturate(120%);
+}
+
+.graph-hud__panel[hidden] {
+  display: none;
+}
+
+.graph-hud__panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.graph-hud__panel-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.graph-hud__close {
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--text-hint);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.graph-hud__close:hover {
+  color: var(--text);
+}
+
+.graph-hud__setting {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.graph-hud__setting label {
+  color: var(--text-hint);
+  font-size: 0.74rem;
+  font-style: italic;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.graph-hud__setting div {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 6px;
+}
+
+.graph-hud__setting button {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg-elevated) 64%, transparent);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: var(--font-serif);
+  font-size: 13px;
+}
+
+.graph-hud__setting button:hover {
+  color: var(--text);
+}
+
+.graph-hud__setting button.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent-emphasis);
+}
+
+@keyframes graph-hud-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

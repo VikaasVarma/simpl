@@ -1,0 +1,125 @@
+.graph-dom-notes,
+.graph-dom-measure {
+  position: absolute;
+  pointer-events: none;
+}
+
+.graph-dom-notes {
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.graph-dom-measure {
+  left: -10000px;
+  top: 0;
+  visibility: hidden;
+  contain: layout style;
+}
+
+.graph-dom-note {
+  --note-background: var(--bg);
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  color: var(--text);
+  font-family: var(--font-serif);
+  text-align: center;
+  transform-origin: 0 0;
+  will-change: transform, width, height, border-radius;
+}
+
+.graph-dom-note::after {
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--note-fade-height);
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(to bottom, transparent, var(--note-background));
+}
+
+.graph-dom-note__content {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: var(--note-pad-top) var(--note-pad-x) var(--note-pad-bottom);
+}
+
+.graph-dom-note--measure {
+  position: static;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  transform: none;
+}
+
+.graph-dom-note--measure .graph-dom-note__content {
+  display: block;
+  height: auto;
+}
+
+.graph-dom-note--measure::after {
+  display: none;
+}
+
+.graph-dom-note__title,
+.graph-dom-note__link,
+.graph-dom-note__summary,
+.graph-dom-note__body {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.graph-dom-note__title {
+  width: 100%;
+  font-size: var(--note-title-size);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.018em;
+}
+
+.graph-dom-note__summary {
+  position: relative;
+  z-index: 1;
+  max-width: min(var(--note-reading-col), 100%);
+  margin: var(--note-gap) auto 0;
+  color: var(--text-muted);
+  font-size: var(--note-summary-size);
+  font-style: italic;
+  line-height: 1.42;
+}
+
+.graph-dom-note__link {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  margin: calc(var(--note-gap) * 0.8) 0 0;
+  overflow: visible;
+  pointer-events: auto;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.72em;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.graph-dom-note__link a {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-elevated) 30%, transparent);
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.graph-dom-note__link a:hover {
+  border-color: var(--accent);
+  color: var(--accent-emphasis);
+}

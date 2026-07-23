@@ -1,0 +1,37 @@
+node_modules/
+dist/
+
+# Local vault/content. Never publish raw notes.
+vault/
+generated/
+backups/
+!fixtures/
+!fixtures/vault/
+!fixtures/vault/**
+
+# Local machine/editor/cache noise.
+.DS_Store
+.vscode/
+.idea/
+.cache/
+.vite/
+
+# Local configuration and secrets.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.csr
+*.mobileprovision
+.dev.vars
+wrangler.toml
+
+# Local databases/logs.
+*.sqlite
+*.sqlite3
+*.db
+*.log
