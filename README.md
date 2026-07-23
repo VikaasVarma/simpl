@@ -173,8 +173,13 @@ visualization changes:
 npm run build:site
 ```
 
-By default this uses fixture notes. For a private preproduction build, provide
-`NOTES_VAULT`.
+`build:site`, `build:published`, and `publish:notes` are the only commands that
+write the deployable `dist/` directory. Plain `npm run build` writes
+`.local-build/` instead, so development builds cannot accidentally become the
+deploy artifact.
+
+By default `build:site` uses fixture notes. For a private preproduction build,
+provide `NOTES_VAULT`.
 
 ### Fast Checks
 

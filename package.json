@@ -12,7 +12,7 @@
     "typecheck:scripts": "tsc -p tsconfig.scripts.json",
     "dev": "VITE_DEBUG=1 npm run generate:graph && VITE_DEBUG=1 vite --host 127.0.0.1",
     "build": "npm run generate:graph && tsc --noEmit && npm run typecheck:scripts && vite build",
-    "build:published": "npm run generate:graph:published && tsc --noEmit && npm run typecheck:scripts && vite build && npm run audit:dist",
+    "build:published": "npm run generate:graph:published && tsc --noEmit && npm run typecheck:scripts && PUBLISHED_BUILD=1 vite build && npm run audit:dist",
     "build:site": "npm run build:published",
     "publish:notes": "npm run build:published",
     "preview": "vite preview --host 127.0.0.1"
