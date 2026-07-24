@@ -1,4 +1,5 @@
 import { CAMERA, NOTE } from "../../constants";
+import type { CameraProfile } from "../../camera";
 import { clamp, lerp } from "../../utils/math";
 
 export type NoteRegime = keyof typeof CAMERA.regimes;
@@ -6,25 +7,20 @@ type NoteTransition = keyof typeof CAMERA.transitions;
 
 export function sampleLod(
   zoom: number,
+  profile: CameraProfile,
   heights: Partial<Record<"title" | "summary" | "reader", number>> = {},
 ) {
   const titleHeight = Math.max(NOTE.minH, heights.title ?? NOTE.minH);
   const summaryHeight = Math.max(
     titleHeight,
-    Math.min(
-      heights.reader ?? NOTE.readerH,
-      heights.summary ?? titleHeight,
-    ),
+    Math.min(heights.reader ?? NOTE.readerH, heights.summary ?? titleHeight),
   );
-  const readerHeight = Math.max(
-    summaryHeight,
-    heights.reader ?? NOTE.readerH,
-  );
-  const title = progress(zoom, "landmarkToTitle");
-  const summary = progress(zoom, "titleToSummary");
-  const reader = progress(zoom, "summaryToReader");
-  const interval = activeTransition(zoom);
-  const regime = interval?.from ?? regimeAtZoom(zoom);
+  const readerHeight = Math.max(summaryHeight, heights.reader ?? NOTE.readerH);
+  const title = progress(zoom, profile, "landmarkToTitle");
+  const summary = progress(zoom, profile, "titleToSummary");
+  const reader = progress(zoom, profile, "summaryToReader");
+  const interval = activeTransition(zoom, profile);
+  const regime = interval?.from ?? regimeAtZoom(zoom, profile);
   const height =
     interval === CAMERA.transitions.landmarkToTitle
       ? lerp(NOTE.landmarkH, titleHeight, title)
@@ -43,39 +39,43 @@ export function sampleLod(
   };
 }
 
-function progress(value: number, name: NoteTransition): number {
+function progress(
+  value: number,
+  profile: CameraProfile,
+  name: NoteTransition,
+): number {
   const transition = CAMERA.transitions[name];
-  const t = transitionProgress(value, transition);
+  const t = transitionProgress(value, profile, transition);
   return transition.interpolate(t);
 }
 
 function activeTransition(
   zoom: number,
+  profile: CameraProfile,
 ): (typeof CAMERA.transitions)[NoteTransition] | null {
   return (
-    Object.values(CAMERA.transitions).find(
-      (transition) => {
-        const from = CAMERA.regimes[transition.from];
-        const to = CAMERA.regimes[transition.to];
-        return zoom >= Math.min(from, to) && zoom < Math.max(from, to);
-      },
-    ) ?? null
+    Object.values(CAMERA.transitions).find((transition) => {
+      const from = profile.regimes[transition.from];
+      const to = profile.regimes[transition.to];
+      return zoom >= Math.min(from, to) && zoom < Math.max(from, to);
+    }) ?? null
   );
 }
 
 function transitionProgress(
   zoom: number,
+  profile: CameraProfile,
   transition: (typeof CAMERA.transitions)[NoteTransition],
 ): number {
-  const from = CAMERA.regimes[transition.from];
-  const to = CAMERA.regimes[transition.to];
+  const from = profile.regimes[transition.from];
+  const to = profile.regimes[transition.to];
   return clamp((zoom - from) / (to - from), 0, 1);
 }
 
-function regimeAtZoom(zoom: number): NoteRegime {
-  if (zoom >= CAMERA.regimes.reader) return "reader";
-  if (zoom >= CAMERA.regimes.summary) return "summary";
-  if (zoom >= CAMERA.regimes.title) return "title";
+function regimeAtZoom(zoom: number, profile: CameraProfile): NoteRegime {
+  if (zoom >= profile.regimes.reader) return "reader";
+  if (zoom >= profile.regimes.summary) return "summary";
+  if (zoom >= profile.regimes.title) return "title";
   return "landmark";
 }
 

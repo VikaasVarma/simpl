@@ -1,4 +1,5 @@
-import { CAMERA, paletteForTheme } from "../constants";
+import { cameraProfileForViewport } from "../camera";
+import { paletteForTheme } from "../constants";
 import { drawFlowLabels, flowLabelsFor } from "../../components/flowLabels";
 import { drawDomNotes } from "../rendering/dom/notes";
 import { drawFlows, drawHalos, drawNotes } from "../rendering";
@@ -13,12 +14,15 @@ import type { GraphSceneApp, SceneState } from "./types";
 
 export function redrawScene(app: GraphSceneApp, state: SceneState): void {
   const { width, height } = app.root.getBoundingClientRect();
+  const profile = cameraProfileForViewport(width, height);
+  applyViewportProfile(app, profile);
   state.currentNoteLayouts = drawDomNotes(
     app.domNotes,
     app.view.notes,
     app.camera,
     width,
     height,
+    profile,
     state.settings.theme,
     `${state.settings.textScale}:${state.settings.lineWidth}`,
   );
@@ -26,13 +30,21 @@ export function redrawScene(app: GraphSceneApp, state: SceneState): void {
   drawNotes(
     app.view.notes,
     state.currentNoteLayouts,
-    state.focusedNode && app.camera.zoom >= CAMERA.focusZoom
+    state.focusedNode && app.camera.zoom >= profile.focusZoom
       ? state.focusedNode.id
       : null,
   );
 
   redrawFlows(app, state);
   state.dirty = true;
+}
+
+function applyViewportProfile(
+  app: GraphSceneApp,
+  profile: ReturnType<typeof cameraProfileForViewport>,
+): void {
+  app.root.style.setProperty("--graph-ui-scale", profile.uiScale.toFixed(3));
+  app.root.style.setProperty("--graph-edge-inset", `${profile.edgeInset}px`);
 }
 
 function redrawFlows(app: GraphSceneApp, state: SceneState): void {

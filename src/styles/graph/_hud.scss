@@ -11,9 +11,9 @@
 
 .graph-hud__topbar {
   position: absolute;
-  top: 14px;
-  right: 16px;
-  left: 22px;
+  top: max(10px, calc(14px * var(--graph-ui-scale)));
+  right: var(--graph-edge-inset);
+  left: var(--graph-edge-inset);
   pointer-events: none;
 }
 
@@ -23,7 +23,7 @@
   color: var(--text-muted);
   cursor: pointer;
   font-family: var(--font-serif);
-  font-size: 13px;
+  font-size: calc(13px * var(--graph-ui-scale));
   font-style: italic;
   pointer-events: auto;
 }
@@ -38,24 +38,28 @@
   right: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: calc(8px * var(--graph-ui-scale));
   pointer-events: auto;
 }
 
 .graph-hud__search-button {
   display: inline-flex;
-  min-width: 220px;
+  width: min(
+    calc(220px * var(--graph-ui-scale)),
+    calc(100vw - var(--graph-edge-inset) * 2 - 44px)
+  );
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 5px 12px;
+  gap: calc(16px * var(--graph-ui-scale));
+  padding: calc(5px * var(--graph-ui-scale)) calc(12px * var(--graph-ui-scale));
   border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
   border-radius: 6px;
   background: color-mix(in srgb, var(--bg) 86%, transparent);
   color: var(--text-muted);
   cursor: pointer;
   font-family: var(--font-mono);
-  font-size: 0.78rem;
+  font-size: calc(0.78rem * var(--graph-ui-scale));
   pointer-events: auto;
   backdrop-filter: blur(8px);
 }
@@ -68,18 +72,18 @@
 }
 
 .graph-hud__search-button kbd {
-  margin-left: 4px;
-  padding: 1px 4px;
+  margin-left: calc(4px * var(--graph-ui-scale));
+  padding: 1px calc(4px * var(--graph-ui-scale));
   border-radius: 3px;
   background: color-mix(in srgb, var(--text) 6%, transparent);
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: calc(0.7rem * var(--graph-ui-scale));
 }
 
 .graph-hud__settings {
   display: flex;
-  width: 30px;
-  height: 30px;
+  width: calc(30px * var(--graph-ui-scale));
+  height: calc(30px * var(--graph-ui-scale));
   align-items: center;
   justify-content: center;
   border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
@@ -98,13 +102,16 @@
 
 .graph-hud__panel {
   position: absolute;
-  top: 56px;
-  right: 22px;
+  top: calc(56px * var(--graph-ui-scale));
+  right: var(--graph-edge-inset);
   display: flex;
-  width: 286px;
+  width: min(calc(286px * var(--graph-ui-scale)), calc(100vw - var(--graph-edge-inset) * 2));
   flex-direction: column;
-  gap: 15px;
-  padding: 18px 20px 16px;
+  gap: calc(15px * var(--graph-ui-scale));
+  padding:
+    calc(18px * var(--graph-ui-scale))
+    calc(20px * var(--graph-ui-scale))
+    calc(16px * var(--graph-ui-scale));
   border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
   border-radius: 14px;
   background: color-mix(in srgb, var(--bg) 92%, transparent);
@@ -113,7 +120,7 @@
     0 16px 36px color-mix(in srgb, var(--text) 12%, transparent);
   color: var(--text);
   font-family: var(--font-serif);
-  font-size: 14px;
+  font-size: calc(14px * var(--graph-ui-scale));
   pointer-events: auto;
   transform-origin: top right;
   animation: graph-hud-panel-in 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -133,18 +140,18 @@
 .graph-hud__panel-header h2 {
   margin: 0;
   color: var(--text);
-  font-size: 0.92rem;
+  font-size: calc(0.92rem * var(--graph-ui-scale));
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
 .graph-hud__close {
-  padding: 0 4px;
+  padding: 0 calc(4px * var(--graph-ui-scale));
   border: 0;
   background: none;
   color: var(--text-hint);
   cursor: pointer;
-  font-size: 20px;
+  font-size: calc(20px * var(--graph-ui-scale));
   line-height: 1;
 }
 
@@ -155,12 +162,12 @@
 .graph-hud__setting {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: calc(6px * var(--graph-ui-scale));
 }
 
 .graph-hud__setting label {
   color: var(--text-hint);
-  font-size: 0.74rem;
+  font-size: calc(0.74rem * var(--graph-ui-scale));
   font-style: italic;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -170,12 +177,12 @@
   display: grid;
   grid-auto-columns: 1fr;
   grid-auto-flow: column;
-  gap: 6px;
+  gap: calc(6px * var(--graph-ui-scale));
 }
 
 .graph-hud__setting button {
   display: flex;
-  min-height: 34px;
+  min-height: calc(34px * var(--graph-ui-scale));
   align-items: center;
   justify-content: center;
   border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
@@ -184,7 +191,7 @@
   color: var(--text-muted);
   cursor: pointer;
   font-family: var(--font-serif);
-  font-size: 13px;
+  font-size: calc(13px * var(--graph-ui-scale));
 }
 
 .graph-hud__setting button:hover {

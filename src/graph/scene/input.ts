@@ -1,5 +1,11 @@
 import { CAMERA } from "../constants";
-import { eventToWorld, followNode, resizeCamera, zoomAt } from "../camera";
+import {
+  cameraProfileForViewport,
+  eventToWorld,
+  followNode,
+  resizeCamera,
+  zoomAt,
+} from "../camera";
 import { isFixedNode } from "../simulation";
 import {
   hasPopups,
@@ -10,6 +16,7 @@ import { clamp, smoothstep } from "../utils/math";
 import { fitCameraToRoot } from "./focus";
 import { hitTestScene, localPoint, type SceneHit } from "./hitTest";
 import type { FocusOptions, GraphSceneApp, SceneState } from "./types";
+import type { CameraProfile } from "../camera";
 import type { SimNode } from "../simulation";
 import type { WorldPoint } from "../camera";
 import type { Point } from "../flows";
@@ -164,15 +171,17 @@ function zoomFromWheel(
   event: WheelEvent,
 ): void {
   event.preventDefault();
+  const { width, height } = app.root.getBoundingClientRect();
+  const profile = cameraProfileForViewport(width, height);
   state.cancelFocusAnimation?.();
   state.cancelFocusAnimation = null;
   zoomAt(
     app.camera,
     event,
     app.renderer.domElement,
-    wheelTargetZoom(app, event),
+    wheelTargetZoom(app, event, profile),
   );
-  if (state.focusedNode && app.camera.zoom <= CAMERA.regimes.summary) {
+  if (state.focusedNode && app.camera.zoom <= profile.regimes.summary) {
     state.focusedNode = null;
     actions.clearHistory();
     history.replaceState(null, "", `${location.pathname}${location.search}`);
@@ -180,17 +189,21 @@ function zoomFromWheel(
   actions.redraw();
 }
 
-function wheelTargetZoom(app: GraphSceneApp, event: WheelEvent): number {
-  const scale = focusZoomScale(app.camera.zoom);
+function wheelTargetZoom(
+  app: GraphSceneApp,
+  event: WheelEvent,
+  profile: CameraProfile,
+): number {
+  const scale = focusZoomScale(app.camera.zoom, profile.focusZoom);
   return clamp(
     app.camera.zoom * Math.exp(-event.deltaY * CAMERA.wheel.speed * scale),
-    CAMERA.minZoom,
-    CAMERA.maxZoom,
+    profile.minZoom,
+    profile.maxZoom,
   );
 }
 
-function focusZoomScale(zoom: number): number {
-  const distance = Math.abs(Math.log(zoom / CAMERA.focusZoom));
+function focusZoomScale(zoom: number, focusZoom: number): number {
+  const distance = Math.abs(Math.log(zoom / focusZoom));
   const t = smoothstep(
     clamp(1 - distance / CAMERA.wheel.focusStickyRadius, 0, 1),
   );
@@ -212,9 +225,12 @@ export function resize(
   const { width, height } = app.root.getBoundingClientRect();
   app.renderer.setSize(width, height);
   resizeCamera(app.camera, width, height);
-  if (state.focusedNode && !state.cancelFocusAnimation)
+  if (state.focusedNode && !state.cancelFocusAnimation) {
+    const profile = cameraProfileForViewport(width, height);
+    app.camera.zoom = profile.focusZoom;
+    app.camera.updateProjectionMatrix();
     followNode(app.camera, state.focusedNode);
-  else fitCameraToRoot(app);
+  } else fitCameraToRoot(app);
   redraw();
 }
 

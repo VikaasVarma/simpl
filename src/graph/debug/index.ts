@@ -12,6 +12,7 @@ export function mountDebug(app: GraphSceneApp, state: SceneState): void {
   let frames = 0;
   let fps = 0;
   let last = performance.now();
+  let settling = false;
 
   if (!enabled && graphMode() === "unofficial") {
     setGraphMode("official");
@@ -28,6 +29,14 @@ export function mountDebug(app: GraphSceneApp, state: SceneState): void {
     apply();
   });
   debug.graphMode.addEventListener("click", switchGraphMode);
+  debug.settle.addEventListener("click", () => {
+    settling = !settling;
+    app.simulation.settle(settling);
+    render();
+  });
+  debug.saveSeed.addEventListener("click", () => {
+    void saveSeed(app, debug.saveSeed);
+  });
 
   requestAnimationFrame(tick);
 
@@ -56,6 +65,8 @@ export function mountDebug(app: GraphSceneApp, state: SceneState): void {
     set(debug.fps, fps);
     set(debug.regime, app.domNotes.debug || "unknown");
     debug.graphMode.textContent = `graph: ${graphMode()}`;
+    debug.settle.textContent = settling ? "settle on" : "settle";
+    debug.settle.classList.toggle("is-active", settling);
   }
 }
 
@@ -68,6 +79,8 @@ type DebugPanel = {
   fps: HTMLElement;
   regime: HTMLElement;
   graphMode: HTMLButtonElement;
+  settle: HTMLButtonElement;
+  saveSeed: HTMLButtonElement;
   style: HTMLStyleElement;
 };
 
@@ -80,6 +93,9 @@ function createDebugPanel(): DebugPanel {
   const fps = row(body, "FPS");
   const regime = row(body, "Regime");
   const graphMode = document.createElement("button");
+  const controls = document.createElement("div");
+  const settle = document.createElement("button");
+  const saveSeed = document.createElement("button");
   const style = document.createElement("style");
 
   element.className = "graph-debug-panel";
@@ -87,8 +103,17 @@ function createDebugPanel(): DebugPanel {
   toggle.className = "graph-debug-panel__toggle";
   graphMode.type = "button";
   graphMode.className = "graph-debug-panel__mode";
+  controls.className = "graph-debug-panel__controls";
+  settle.type = "button";
+  settle.className = "graph-debug-panel__button";
+  settle.textContent = "settle";
+  saveSeed.type = "button";
+  saveSeed.className = "graph-debug-panel__button";
+  saveSeed.textContent = "save seed";
   body.className = "graph-debug-panel__body";
+  controls.append(settle, saveSeed);
   body.append(graphMode);
+  body.append(controls);
   element.append(toggle, body);
   style.textContent = `
     .graph-debug .graph-dom-note:not([hidden]) {
@@ -144,6 +169,29 @@ function createDebugPanel(): DebugPanel {
       font: inherit;
       text-align: left;
     }
+
+    .graph-debug-panel__controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .graph-debug-panel__button {
+      min-width: 0;
+      padding: 3px 5px;
+      border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .graph-debug-panel__button.is-active {
+      border-color: color-mix(in srgb, var(--accent) 68%, transparent);
+      color: var(--accent);
+    }
   `;
 
   return {
@@ -155,6 +203,8 @@ function createDebugPanel(): DebugPanel {
     fps,
     regime,
     graphMode,
+    settle,
+    saveSeed,
     style,
   };
 }
@@ -183,4 +233,40 @@ function setGraphMode(mode: ReturnType<typeof graphMode>): void {
   if (mode === "official") url.searchParams.delete("graph");
   else url.searchParams.set("graph", mode);
   location.href = url.toString();
+}
+
+async function saveSeed(
+  app: GraphSceneApp,
+  button: HTMLButtonElement,
+): Promise<void> {
+  const original = button.textContent || "save seed";
+  button.disabled = true;
+  button.textContent = "saving...";
+  try {
+    const response = await fetch("/__graph-debug/seed", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nodes: app.nodes.map((node) => ({
+          id: node.id,
+          x: round(node.x),
+          y: round(node.y),
+        })),
+      }),
+    });
+    if (!response.ok) throw new Error(await response.text());
+    button.textContent = "saved";
+  } catch (error) {
+    console.error(error);
+    button.textContent = "failed";
+  } finally {
+    window.setTimeout(() => {
+      button.disabled = false;
+      button.textContent = original;
+    }, 1200);
+  }
+}
+
+function round(value: number): number {
+  return Math.round(value * 100) / 100;
 }

@@ -1,4 +1,5 @@
 import type { OrthographicCamera } from "three";
+import type { CameraProfile } from "../../camera";
 import {
   NOTE,
   NOTE_CARD,
@@ -87,6 +88,7 @@ export function drawDomNotes(
   camera: OrthographicCamera,
   width: number,
   height: number,
+  profile: CameraProfile,
   theme: ThemeName,
   measureKey = "",
 ): NoteLayout[] {
@@ -109,7 +111,7 @@ export function drawDomNotes(
     const title = data.node.title;
     const summary = data.node.summary;
     const endpoint = endpointHeights(layer, title, summary, measureKey);
-    const lod = sampleLod(camera.zoom, {
+    const lod = sampleLod(camera.zoom, profile, {
       title: endpoint.title,
       summary: endpoint.summary,
       reader: NOTE.readerH,

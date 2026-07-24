@@ -5,7 +5,10 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: 12vh 16px 16px;
+  padding:
+    max(56px, calc(12vh * var(--graph-ui-scale)))
+    var(--graph-edge-inset)
+    var(--graph-edge-inset);
   background: color-mix(in srgb, var(--text) 28%, transparent);
   pointer-events: auto;
   backdrop-filter: blur(4px);
@@ -18,8 +21,8 @@
 .graph-search__panel {
   display: flex;
   width: 100%;
-  max-width: 640px;
-  max-height: 75vh;
+  max-width: min(calc(640px * var(--graph-ui-scale)), calc(100vw - var(--graph-edge-inset) * 2));
+  max-height: calc(100dvh - max(56px, calc(12vh * var(--graph-ui-scale))) - var(--graph-edge-inset));
   flex-direction: column;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
@@ -35,15 +38,15 @@
 .graph-search__input-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 18px;
+  gap: calc(10px * var(--graph-ui-scale));
+  padding: calc(14px * var(--graph-ui-scale)) calc(18px * var(--graph-ui-scale));
   border-bottom: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
 }
 
 .graph-search__icon {
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 1.2rem;
+  font-size: calc(1.2rem * var(--graph-ui-scale));
   user-select: none;
 }
 
@@ -56,7 +59,7 @@
   background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: 1.05rem;
+  font-size: calc(1.05rem * var(--graph-ui-scale));
 }
 
 .graph-search__input::placeholder {
@@ -65,17 +68,17 @@
 
 .graph-search__key,
 .graph-search__hint kbd {
-  padding: 2px 6px;
+  padding: calc(2px * var(--graph-ui-scale)) calc(6px * var(--graph-ui-scale));
   border-radius: 4px;
   background: color-mix(in srgb, var(--text) 6%, transparent);
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: calc(0.72rem * var(--graph-ui-scale));
 }
 
 .graph-search__results {
   margin: 0;
-  padding: 6px 0;
+  padding: calc(6px * var(--graph-ui-scale)) 0;
   overflow-y: auto;
   list-style: none;
   scrollbar-color: color-mix(in srgb, var(--text) 18%, transparent) transparent;
@@ -83,7 +86,7 @@
 }
 
 .graph-search__result {
-  padding: 10px 18px;
+  padding: calc(10px * var(--graph-ui-scale)) calc(18px * var(--graph-ui-scale));
   border-left: 2px solid transparent;
   cursor: pointer;
   transition:
@@ -98,7 +101,7 @@
 
 .graph-search__result-title {
   color: var(--text);
-  font-size: 1rem;
+  font-size: calc(1rem * var(--graph-ui-scale));
   font-weight: 600;
 }
 
@@ -112,13 +115,13 @@
 .graph-search__result-summary {
   margin: 2px 0 0;
   color: var(--text-muted);
-  font-size: 0.88rem;
+  font-size: calc(0.88rem * var(--graph-ui-scale));
   font-style: italic;
   line-height: 1.35;
 }
 
 .graph-search__empty {
-  padding: 18px;
+  padding: calc(18px * var(--graph-ui-scale));
   color: var(--text-muted);
   font-style: italic;
   text-align: center;
@@ -127,11 +130,11 @@
 .graph-search__hint {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: calc(14px * var(--graph-ui-scale));
   margin: 0;
-  padding: 10px 18px;
+  padding: calc(10px * var(--graph-ui-scale)) calc(18px * var(--graph-ui-scale));
   border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: calc(0.75rem * var(--graph-ui-scale));
 }

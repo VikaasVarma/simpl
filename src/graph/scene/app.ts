@@ -83,7 +83,7 @@ export async function mountGraphScene(): Promise<{
   applyGraphTheme(app.renderer, app.view, state.settings.theme);
   focus.focusById();
   app.simulation.start("initial");
-  if (import.meta.env.VITE_DEBUG === "1") {
+  if (import.meta.env.DEV && import.meta.env.VITE_DEBUG === "1") {
     import("../debug").then(({ mountDebug }) => mountDebug(app, state));
   }
   requestAnimationFrame(render);

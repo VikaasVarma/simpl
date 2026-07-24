@@ -1,4 +1,6 @@
 .graph {
+  --graph-ui-scale: 1;
+  --graph-edge-inset: 48px;
   position: fixed;
   inset: 0;
   overflow: hidden;

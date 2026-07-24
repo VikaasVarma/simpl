@@ -6,29 +6,29 @@
 }
 
 .graph-popup-stack {
-  --popup-enter-x: 18px;
+  --popup-enter-x: calc(18px * var(--graph-ui-scale));
   position: absolute;
   top: 50%;
-  right: 48px;
+  right: var(--graph-edge-inset);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: calc(10px * var(--graph-ui-scale));
   transform: translateY(-50%);
 }
 
 .graph-popup-stack[data-side="left"] {
-  --popup-enter-x: -18px;
+  --popup-enter-x: calc(-18px * var(--graph-ui-scale));
   right: auto;
-  left: 48px;
+  left: var(--graph-edge-inset);
 }
 
 .graph-popup {
   --c: var(--connection-0);
   display: flex;
-  width: 300px;
+  width: min(calc(300px * var(--graph-ui-scale)), calc(100vw - var(--graph-edge-inset) * 2));
   flex-direction: column;
-  gap: 6px;
-  padding: 16px 18px;
+  gap: calc(6px * var(--graph-ui-scale));
+  padding: calc(16px * var(--graph-ui-scale)) calc(18px * var(--graph-ui-scale));
   border: 0;
   border-left: 3px solid var(--c);
   border-radius: 10px;
@@ -44,7 +44,7 @@
     0 22px 50px color-mix(in srgb, var(--text) 12%, transparent);
   color: var(--text);
   cursor: pointer;
-  font: 400 0.92rem / 1.55 var(--font-serif);
+  font: 400 calc(0.92rem * var(--graph-ui-scale)) / 1.55 var(--font-serif);
   pointer-events: auto;
   text-align: left;
   opacity: 1;
@@ -64,14 +64,14 @@
 
 .graph-popup__eyebrow {
   color: var(--accent-emphasis);
-  font-size: 0.7rem;
+  font-size: calc(0.7rem * var(--graph-ui-scale));
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .graph-popup__message {
-  font-size: 1rem;
+  font-size: calc(1rem * var(--graph-ui-scale));
   line-height: 1.4;
 }
 

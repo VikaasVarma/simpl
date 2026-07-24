@@ -36,11 +36,24 @@ export function createSimulation({
     cancelRun = runSimulation(simulation, run);
   };
 
+  const settle = (enabled: boolean): void => {
+    cancelRun?.();
+    cancelRun = null;
+    if (enabled) {
+      simulation
+        .alpha(SIMULATION.runs.initial.alpha)
+        .alphaTarget(SIMULATION.runs.initial.alpha)
+        .restart();
+    } else {
+      start("normal");
+    }
+  };
+
   const release = (node: SimNode): void => {
     node.fx = null;
     node.fy = null;
     start("normal");
   };
 
-  return { start, release };
+  return { start, release, settle };
 }

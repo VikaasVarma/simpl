@@ -1,5 +1,6 @@
 import { OrthographicCamera } from "three";
 import { CAMERA } from "../constants";
+import { cameraProfileForViewport } from "./profile";
 import type { SimNode } from "../simulation/types";
 import { easeOutCubic, lerp, smoothstep } from "../utils/math";
 
@@ -16,7 +17,9 @@ export function focusCamera(
   onFrame: () => void,
   onDone?: () => void,
 ): () => void {
-  const screenWidth = Math.max(1, element.getBoundingClientRect().width);
+  const { width, height } = element.getBoundingClientRect();
+  const screenWidth = Math.max(1, width);
+  const profile = cameraProfileForViewport(width, height);
 
   const path = vanWijkPath(
     camera.position.x,
@@ -24,7 +27,7 @@ export function focusCamera(
     screenWidth / camera.zoom,
     node.x,
     node.y,
-    screenWidth / CAMERA.focusZoom,
+    screenWidth / profile.focusZoom,
   );
 
   const start = performance.now();
@@ -40,7 +43,7 @@ export function focusCamera(
     camera.position.x = t >= 1 ? node.x : lerp(view.x, node.x, follow);
     camera.position.y = t >= 1 ? node.y : lerp(view.y, node.y, follow);
 
-    camera.zoom = t >= 1 ? CAMERA.focusZoom : screenWidth / view.worldWidth;
+    camera.zoom = t >= 1 ? profile.focusZoom : screenWidth / view.worldWidth;
 
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld();
