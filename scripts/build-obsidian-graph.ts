@@ -9,6 +9,7 @@ import {
   renderMarkdownBody,
   renderNoteBody,
 } from "./graph-build/renderHtml";
+import type { NoteDraft } from "./graph-build/types";
 
 const ROOT = process.cwd();
 const VAULT = path.resolve(ROOT, vaultPath());
@@ -78,7 +79,10 @@ function emitGraph(name: string, publishedOnly: boolean): void {
           note.id,
           renderNoteBody({
             ...note,
-            connections: nodeById.get(note.id)?.connections ?? [],
+            connections: bodyConnections(
+              note,
+              nodeById.get(note.id)?.connections ?? [],
+            ),
           }),
         ]),
     ),
@@ -86,6 +90,23 @@ function emitGraph(name: string, publishedOnly: boolean): void {
     graphLinks,
   });
   if (name) emitSeedPositions(path.join(dir, "seedPositions.ts"));
+}
+
+function bodyConnections(
+  note: NoteDraft,
+  visible: NoteDraft["connections"],
+): NoteDraft["connections"] {
+  const visibleIds = new Set(visible.map((group) => group.id));
+  return [
+    ...visible,
+    ...note.connections.filter(
+      (group) =>
+        !visibleIds.has(group.id) &&
+        group.connections.some(
+          (connection) => connection.icon && connection.href,
+        ),
+    ),
+  ];
 }
 
 function emitSeedPositions(outPath: string): void {

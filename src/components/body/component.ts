@@ -25,7 +25,7 @@ export function createBodyComponent(): BodyComponent {
   element.addEventListener("scroll", () => updateBodyScrollFlags(element), {
     passive: true,
   });
-  element.addEventListener("click", copyCode);
+  element.addEventListener("click", handleCodeBlockClick);
   element.addEventListener(
     "wheel",
     (event) => {
@@ -69,20 +69,40 @@ export function setBodyProgress(
   setVisualizationsActive(body.inner, reader && !body.element.hidden);
 }
 
-async function copyCode(event: MouseEvent): Promise<void> {
+async function handleCodeBlockClick(event: MouseEvent): Promise<void> {
+  const modeButton = (
+    event.target as Element | null
+  )?.closest<HTMLButtonElement>("[data-code-mode-toggle]");
+  if (modeButton) {
+    event.stopPropagation();
+    setCodeMode(modeButton);
+    return;
+  }
+
   const button = (event.target as Element | null)?.closest<HTMLButtonElement>(
     ".code-copy-btn",
   );
   if (!button) return;
   event.stopPropagation();
-  const code = button.parentElement?.querySelector("code");
-  const text = (code?.textContent ?? "").replace(/\n$/, "");
+  const text =
+    button
+      .closest(".code-block-wrap")
+      ?.querySelector<HTMLTextAreaElement>("[data-code-copy-text]")?.value ??
+    "";
   try {
     await navigator.clipboard.writeText(text);
     copied(button, "copied");
   } catch {
     copied(button, "error");
   }
+}
+
+function setCodeMode(button: HTMLButtonElement): void {
+  const wrap = button.closest<HTMLElement>(".code-block-wrap");
+  if (!wrap) return;
+  const mode = wrap.dataset.codeMode === "diff" ? "code" : "diff";
+  wrap.dataset.codeMode = mode;
+  button.textContent = mode;
 }
 
 function copied(button: HTMLButtonElement, label: string): void {

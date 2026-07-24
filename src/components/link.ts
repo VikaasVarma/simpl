@@ -15,10 +15,12 @@ export function createLinkComponent(): LinkComponent {
 
 export function setLinkContent(link: LinkComponent, href = ""): void {
   const label = href ? `↗ ${host(href)}` : "";
-  if (link.anchor.getAttribute("href") !== href)
+  if (href && link.anchor.getAttribute("href") !== href)
     link.anchor.setAttribute("href", href);
+  else if (!href) link.anchor.removeAttribute("href");
   if (link.anchor.textContent !== label) link.anchor.textContent = label;
   link.anchor.title = href;
+  if (!href) link.element.hidden = true;
 }
 
 export function setLinkVisible(link: LinkComponent, visible: boolean): void {

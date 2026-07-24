@@ -14,9 +14,6 @@
   top: 14px;
   right: 16px;
   left: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   pointer-events: none;
 }
 
@@ -36,6 +33,9 @@
 }
 
 .graph-hud__actions {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: flex;
   align-items: center;
   gap: 8px;

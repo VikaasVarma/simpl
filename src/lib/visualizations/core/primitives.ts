@@ -1,5 +1,9 @@
 import * as THREE from "three";
+import { Text } from "troika-three-text";
+import monoFont from "@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-600-normal.woff?url";
 import { PALETTE, OPACITY } from "./palette";
+
+const LINE_WIDTH = 0.014;
 
 export type Vec2 = [number, number];
 
@@ -9,7 +13,30 @@ export type Primitive = {
   dispose?: () => void;
 };
 
-function lineGeometry(verts: number[]): THREE.BufferGeometry {
+export function createLabelText(
+  text: string,
+  cx: number,
+  cy: number,
+  size: number,
+  color: number = PALETTE.INK,
+): Primitive {
+  const mesh = new Text();
+  mesh.text = text;
+  mesh.fontSize = size;
+  mesh.font = monoFont;
+  mesh.color = color;
+  mesh.anchorX = "center";
+  mesh.anchorY = "middle";
+  mesh.depthOffset = -1;
+  mesh.position.set(cx, cy, 0);
+  mesh.sync();
+  return {
+    mesh,
+    dispose: () => mesh.dispose(),
+  };
+}
+
+function geometry(verts: number[]): THREE.BufferGeometry {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.Float32BufferAttribute(verts, 3));
   return geo;
@@ -21,8 +48,34 @@ function pushSegment(
   y1: number,
   x2: number,
   y2: number,
+  width = LINE_WIDTH,
 ) {
-  out.push(x1, y1, 0, x2, y2, 0);
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.hypot(dx, dy);
+  if (len < 1e-6) return;
+  const px = (-dy / len) * width * 0.5;
+  const py = (dx / len) * width * 0.5;
+  out.push(
+    x1 - px,
+    y1 - py,
+    0,
+    x2 - px,
+    y2 - py,
+    0,
+    x2 + px,
+    y2 + py,
+    0,
+    x1 - px,
+    y1 - py,
+    0,
+    x2 + px,
+    y2 + py,
+    0,
+    x1 + px,
+    y1 + py,
+    0,
+  );
 }
 
 function createParticleMeshes(
@@ -97,30 +150,27 @@ export function createStroke(
     const w1y = -ux * sinW + uy * cosW;
     const w2x = ux * cosW - uy * sinW;
     const w2y = ux * sinW + uy * cosW;
-    pushSegment(
-      verts,
+    verts.push(
       last[0],
       last[1],
+      0,
       last[0] + w1x * back,
       last[1] + w1y * back,
-    );
-    pushSegment(
-      verts,
-      last[0],
-      last[1],
+      0,
       last[0] + w2x * back,
       last[1] + w2y * back,
+      0,
     );
   }
-  const geo = lineGeometry(verts);
-  const mat = new THREE.LineBasicMaterial({
+  const geo = geometry(verts);
+  const mat = new THREE.MeshBasicMaterial({
     color,
     transparent: true,
     opacity,
     depthTest: false,
     depthWrite: false,
   });
-  const mesh = new THREE.LineSegments(geo, mat);
+  const mesh = new THREE.Mesh(geo, mat);
   return {
     mesh,
     dispose: () => {
@@ -179,7 +229,6 @@ export function createBlock(
     owned.push(geo, mat);
   }
 
-  // Outline as a LineSegments tracing the shape.
   const pts = shape.getPoints(64);
   const verts: number[] = [];
   for (let i = 0; i < pts.length; i++) {
@@ -187,15 +236,15 @@ export function createBlock(
     const b = pts[(i + 1) % pts.length];
     pushSegment(verts, a.x, a.y, b.x, b.y);
   }
-  const lineGeo = lineGeometry(verts);
-  const lineMat = new THREE.LineBasicMaterial({
+  const lineGeo = geometry(verts);
+  const lineMat = new THREE.MeshBasicMaterial({
     color: stroke,
     transparent: true,
     opacity: strokeOpacity,
     depthTest: false,
     depthWrite: false,
   });
-  group.add(new THREE.LineSegments(lineGeo, lineMat));
+  group.add(new THREE.Mesh(lineGeo, lineMat));
   owned.push(lineGeo, lineMat);
 
   return {
@@ -396,13 +445,15 @@ export function createPlusMarker(
   const bar = radius * 0.55;
   pushSegment(verts, cx - bar, cy, cx + bar, cy);
   pushSegment(verts, cx, cy - bar, cx, cy + bar);
-  const geo = lineGeometry(verts);
-  const mat = new THREE.LineBasicMaterial({
+  const geo = geometry(verts);
+  const mat = new THREE.MeshBasicMaterial({
     color,
     transparent: true,
     opacity,
+    depthTest: false,
+    depthWrite: false,
   });
-  const mesh = new THREE.LineSegments(geo, mat);
+  const mesh = new THREE.Mesh(geo, mat);
   return {
     mesh,
     dispose: () => {

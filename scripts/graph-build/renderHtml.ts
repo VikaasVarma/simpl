@@ -1,7 +1,10 @@
 import katex from "katex";
 import MarkdownIt from "markdown-it";
 import footnote from "markdown-it-footnote";
-import { transformerNotationDiff } from "@shikijs/transformers";
+import {
+  transformerNotationDiff,
+  transformerNotationWordHighlight,
+} from "@shikijs/transformers";
 import python from "@shikijs/langs/python";
 import diff from "@shikijs/langs/diff";
 import githubLight from "@shikijs/themes/github-light";
@@ -20,6 +23,8 @@ type RenderToken =
   | { type: "viz"; part: VizPart };
 
 const TOKEN_RE = /\uE000(\d+)\uE001/g;
+const CODE_DIRECTIVE_RE = /\s*#\s*\[!code [^\]]+\]\s*$/g;
+const REMOVED_CODE_RE = /\[!code --(?::\d+)?\]/;
 const markdown = new MarkdownIt({ html: true, linkify: false }).use(footnote);
 const shiki = createHighlighterCoreSync({
   themes: [githubLight],
@@ -184,20 +189,53 @@ function blockToken(tokens: RenderToken[], item: RenderToken): string {
 }
 
 function codeBlock(value: string, language = ""): string {
-  const code = shikiCode(value, language);
-  return `<div class="code-block-wrap">${code}<button class="code-copy-btn" type="button">copy</button></div>`;
+  const clean = cleanCode(value);
+  const hasDiff = clean !== value.trimEnd();
+  const views = [
+    codeView("code", shikiCode(clean, language, false)),
+    hasDiff ? codeView("diff", shikiCode(value, language, true)) : "",
+  ].join("");
+  return `<div class="code-block-wrap" data-code-mode="code">${codeToolbar(hasDiff)}<div class="code-block-surface">${views}</div><textarea hidden data-code-copy-text>${escapeHtml(clean)}</textarea></div>`;
 }
 
-function shikiCode(value: string, language: string): string {
+function codeToolbar(hasDiff: boolean): string {
+  const toggle = hasDiff
+    ? '<button class="code-mode-btn" type="button" data-code-mode-toggle>code</button>'
+    : "";
+  return `<div class="code-block-toolbar">${toggle}<button class="code-copy-btn" type="button">copy</button></div>`;
+}
+
+function codeView(mode: "code" | "diff", html: string): string {
+  return `<div class="code-block-view" data-code-view="${mode}">${html}</div>`;
+}
+
+function shikiCode(value: string, language: string, diff: boolean): string {
   const lang = language === "py" ? "python" : language || "python";
   if (lang !== "python" && lang !== "diff") return escapedCode(value, language);
   return shiki
     .codeToHtml(value, {
       lang,
       theme: "github-light",
-      transformers: [transformerNotationDiff({ matchAlgorithm: "v3" })],
+      transformers: diff
+        ? [
+            transformerNotationDiff({ matchAlgorithm: "v3" }),
+            transformerNotationWordHighlight({
+              classActiveWord: "diff-add",
+              matchAlgorithm: "v3",
+            }),
+          ]
+        : [],
     })
     .replace("<pre", "<pre data-wheel-x");
+}
+
+function cleanCode(value: string): string {
+  return value
+    .split("\n")
+    .filter((line) => !REMOVED_CODE_RE.test(line))
+    .map((line) => line.replace(CODE_DIRECTIVE_RE, ""))
+    .join("\n")
+    .trimEnd();
 }
 
 function escapedCode(value: string, language = ""): string {

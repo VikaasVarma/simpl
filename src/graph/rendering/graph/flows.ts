@@ -9,9 +9,10 @@ import {
 } from "three";
 import { FLOW } from "../../constants";
 import type { Point } from "../../flows";
-import { distance } from "../../utils/vector";
 
 const Z = -30;
+const BEND_STEPS = 5;
+const EPS = 1e-6;
 
 export type FlowLine = {
   path: readonly Point[];
@@ -44,10 +45,7 @@ export function createFlowLayer(): FlowLayer {
   return { group, mesh };
 }
 
-export function drawFlows(
-  layer: FlowLayer,
-  lines: readonly FlowLine[],
-): void {
+export function drawFlows(layer: FlowLayer, lines: readonly FlowLine[]): void {
   layer.group.visible = true;
   const positions: number[] = [];
   const colors: number[] = [];
@@ -63,10 +61,49 @@ function emitFlowLine(
   const highlighted = line.hovered || line.active;
   const color = flowColor(line.color, highlighted);
   const width = highlighted ? FLOW.width : FLOW.width * 0.52;
-  for (let i = 0; i < line.path.length - 1; i++) {
-    emitSegment(positions, colors, line.path[i], line.path[i + 1], width, color);
+  const path = roundedPath(line.path);
+  for (let i = 0; i < path.length - 1; i++) {
+    emitSegment(positions, colors, path[i], path[i + 1], width, color);
   }
-  emitArrow(positions, colors, line.path, color);
+  emitArrow(positions, colors, path, color);
+}
+
+function roundedPath(path: readonly Point[]): Point[] {
+  if (path.length < 3) return [...path];
+  const out = [path[0]];
+  for (let i = 1; i < path.length - 1; i++) {
+    const a = path[i - 1];
+    const b = path[i];
+    const c = path[i + 1];
+    const incoming = Math.hypot(b.x - a.x, b.y - a.y);
+    const outgoing = Math.hypot(c.x - b.x, c.y - b.y);
+    if (incoming < EPS || outgoing < EPS) continue;
+    const r = Math.min(FLOW.bendRadius, incoming / 2, outgoing / 2);
+    const p = {
+      x: b.x - ((b.x - a.x) / incoming) * r,
+      y: b.y - ((b.y - a.y) / incoming) * r,
+    };
+    const q = {
+      x: b.x + ((c.x - b.x) / outgoing) * r,
+      y: b.y + ((c.y - b.y) / outgoing) * r,
+    };
+    out.push(p);
+    for (let j = 1; j < BEND_STEPS; j++) {
+      const t = j / BEND_STEPS;
+      out.push(quad(p, b, q, t));
+    }
+    out.push(q);
+  }
+  out.push(path[path.length - 1]);
+  return out;
+}
+
+function quad(a: Point, b: Point, c: Point, t: number): Point {
+  const u = 1 - t;
+  return {
+    x: u * u * a.x + 2 * u * t * b.x + t * t * c.x,
+    y: u * u * a.y + 2 * u * t * b.y + t * t * c.y,
+  };
 }
 
 function setGeometry(mesh: Mesh, positions: number[], colors: number[]): void {
@@ -126,7 +163,9 @@ function emitArrow(
   color: Color,
 ): void {
   const tip = path[path.length - 1];
-  const prev = [...path].reverse().find((point) => distance(tip, point) > 1e-6);
+  const prev = [...path]
+    .reverse()
+    .find((point) => Math.hypot(tip.x - point.x, tip.y - point.y) > EPS);
   if (!prev) return;
   const dx = tip.x - prev.x;
   const dy = tip.y - prev.y;

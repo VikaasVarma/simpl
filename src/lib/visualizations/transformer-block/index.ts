@@ -1,9 +1,8 @@
 import * as THREE from "three";
-import { Text } from "troika-three-text";
-import monoFont from "@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-600-normal.woff?url";
 import { createRenderer, fit, onMountResize } from "../core/renderer";
 import { PALETTE, OPACITY } from "../core/palette";
 import {
+  createLabelText,
   createStroke,
   createBlock,
   createPlusMarker,
@@ -74,29 +73,6 @@ const Z_PARTICLE = 1;
 const Z_MARKER = 2;
 const Z_BLOCK = 10;
 const Z_TEXT = 20;
-
-function createLabelText(
-  text: string,
-  cx: number,
-  cy: number,
-  size: number,
-  color: number = PALETTE.INK,
-): Primitive {
-  const mesh = new Text();
-  mesh.text = text;
-  mesh.fontSize = size;
-  mesh.font = monoFont;
-  mesh.color = color;
-  mesh.anchorX = "center";
-  mesh.anchorY = "middle";
-  mesh.depthOffset = -1;
-  mesh.position.set(cx, cy, 0);
-  mesh.sync();
-  return {
-    mesh,
-    dispose: () => mesh.dispose(),
-  };
-}
 
 function buildHookPath(splitY: number, mergeY: number): Vec2[] {
   const points: Vec2[] = [];

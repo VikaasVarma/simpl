@@ -4,20 +4,40 @@
   margin-bottom: 1.5em;
 }
 
-.graph-dom-note__body pre {
+.graph-dom-note__body .code-block-view {
+  display: none;
+}
+
+.graph-dom-note__body
+  .code-block-wrap[data-code-mode="code"]
+  [data-code-view="code"],
+.graph-dom-note__body
+  .code-block-wrap[data-code-mode="diff"]
+  [data-code-view="diff"] {
+  display: block;
+}
+
+.graph-dom-note__body .code-block-surface {
   overflow-x: auto;
-  margin: 0;
   padding: 1.5em;
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   border-radius: 10px;
   background: color-mix(in srgb, var(--bg-elevated) 60%, var(--bg));
+}
+
+.graph-dom-note__body pre {
+  overflow: visible;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   font: 400 0.92em / 1.35 var(--font-mono);
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--text) 22%, transparent) transparent;
 }
 
 .graph-dom-note__body pre.shiki {
-  background: color-mix(in srgb, var(--bg-elevated) 60%, var(--bg)) !important;
+  background: transparent !important;
 }
 
 .graph-dom-note__body pre code {
@@ -49,11 +69,24 @@
   text-decoration-color: color-mix(in srgb, #b17361 70%, var(--text));
 }
 
-.graph-dom-note__body .code-copy-btn {
+.graph-dom-note__body .code-block-toolbar {
   position: absolute;
   top: 8px;
   right: 8px;
   z-index: 1;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.graph-dom-note__body .code-block-wrap:hover .code-block-toolbar,
+.graph-dom-note__body .code-block-toolbar:focus-within {
+  opacity: 1;
+}
+
+.graph-dom-note__body .code-mode-btn,
+.graph-dom-note__body .code-copy-btn {
   padding: 4px 9px;
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   border-radius: 6px;
@@ -61,19 +94,18 @@
   color: var(--text-muted);
   cursor: pointer;
   font: 400 11px / 1 var(--font-mono);
-  opacity: 0;
   transition:
-    opacity 0.18s ease,
     color 0.15s ease,
     border-color 0.15s ease;
 }
 
-.graph-dom-note__body .code-block-wrap:hover .code-copy-btn,
 .graph-dom-note__body .code-copy-btn:focus-visible,
 .graph-dom-note__body .code-copy-btn.is-copied {
-  opacity: 1;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
+.graph-dom-note__body .code-mode-btn:hover,
 .graph-dom-note__body .code-copy-btn:hover,
 .graph-dom-note__body .code-copy-btn.is-copied {
   border-color: var(--accent);
