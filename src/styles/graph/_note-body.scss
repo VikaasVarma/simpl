@@ -5,8 +5,8 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  pointer-events: auto;
   user-select: none;
+  -webkit-user-select: none;
   color: var(--text);
   font: 400 var(--note-body-size) / 1.62 var(--font-serif);
   text-align: left;
@@ -73,7 +73,9 @@
 .graph-dom-note__body blockquote,
 .graph-dom-note__body hr,
 .graph-dom-note__body .code-block-wrap,
-.graph-dom-note__body .viz-figure {
+.graph-dom-note__body .viz-figure,
+.graph-dom-note__body .footnotes,
+.graph-dom-note__body .footnotes-sep {
   max-width: min(var(--note-reading-col), 100%);
   margin-left: auto;
   margin-right: auto;
@@ -93,12 +95,6 @@
   margin-top: 1.2em;
   margin-bottom: 0.45em;
   line-height: 1.25;
-}
-
-.graph-dom-note__body a {
-  color: var(--accent);
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
 }
 
 .graph-dom-note__body .table-wrap {
@@ -130,38 +126,6 @@
   border-radius: 4px;
   background: color-mix(in srgb, var(--accent) 15%, transparent);
   color: var(--accent-emphasis);
-}
-
-.graph-dom-note__body .social-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.05em;
-  height: 1.05em;
-  margin: 0 0.25em;
-  vertical-align: -0.18em;
-  color: var(--text-muted);
-  text-decoration: none;
-}
-
-.graph-dom-note__body .social-link:hover,
-.graph-dom-note__body .social-link:focus-visible {
-  color: var(--text);
-}
-
-.graph-dom-note__body .social-link__icon {
-  display: block;
-  width: 100%;
-  height: 100%;
-  background: currentColor;
-  -webkit-mask-image: var(--social-icon);
-  mask-image: var(--social-icon);
-  -webkit-mask-position: center;
-  mask-position: center;
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
 }
 
 .graph-dom-note__body code {
@@ -197,16 +161,14 @@
 }
 
 .graph-dom-note__body .footnotes {
-  max-width: min(var(--note-reading-col), 100%);
-  margin: 0 auto;
   color: var(--text-hint);
   font-size: 0.78em;
   line-height: 1.45;
 }
 
 .graph-dom-note__body .footnotes-sep {
-  max-width: min(var(--note-reading-col), 100%);
-  margin: 2em auto 0.75em;
+  margin-top: 2em;
+  margin-bottom: 0.75em;
   border-top-style: solid;
   border-top-color: color-mix(in srgb, var(--text) 14%, transparent);
 }
@@ -219,12 +181,4 @@
 .graph-dom-note__body .footnotes li,
 .graph-dom-note__body .footnotes p {
   margin-bottom: 0.45em;
-}
-
-.graph-dom-note__body .footnote-ref,
-.graph-dom-note__body .footnote-backref {
-  color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 0.72em;
-  text-decoration: none;
 }

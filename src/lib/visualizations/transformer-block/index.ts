@@ -14,7 +14,7 @@ import {
 } from "../core/primitives";
 import type { VisualizationFactory } from "../core/types";
 
-const VIEW_HALF_H = 1.38;
+const VIEW_HALF_H = 1.58;
 const CYCLE_MS = 12000;
 
 const STREAM_X = 0;
@@ -24,15 +24,19 @@ const Y_TOKEN_IN = -1.26;
 const Y_INPROJ_BOTTOM = -1.04;
 const Y_INPROJ_TOP = -0.86;
 
-const Y_ATTN_SPLIT = -0.64;
-const Y_ATTN_MERGE = -0.18;
+const Y_ATTN_SPLIT = -0.78;
+const Y_ATTN_NORM = -0.57;
+const Y_ATTN_BLOCK = -0.26;
+const Y_ATTN_MERGE = +0.04;
 
 const Y_MLP_SPLIT = +0.2;
-const Y_MLP_MERGE = +0.66;
+const Y_MLP_NORM = +0.43;
+const Y_MLP_BLOCK = +0.74;
+const Y_MLP_MERGE = +1.04;
 
-const Y_OUTPROJ_BOTTOM = +0.86;
-const Y_OUTPROJ_TOP = +1.04;
-const Y_TOKEN_OUT = +1.26;
+const Y_OUTPROJ_BOTTOM = +1.12;
+const Y_OUTPROJ_TOP = +1.3;
+const Y_TOKEN_OUT = +1.5;
 
 const STREAM_Y_LOW = Y_TOKEN_IN + 0.04;
 const STREAM_Y_HIGH = Y_TOKEN_OUT - 0.04;
@@ -47,6 +51,8 @@ const SPLIT_R = 0.022;
 const PLUS_R = 0.068;
 const TOKEN_R = 0.032;
 const PROJ_W = 0.64;
+const NORM_W = PROJ_W;
+const NORM_H = Y_INPROJ_TOP - Y_INPROJ_BOTTOM;
 
 const BRACKET_X = BLOCK_X + BLOCK_W / 2 + 0.17;
 const BRACKET_Y_BOTTOM = Y_ATTN_SPLIT - 0.04;
@@ -66,6 +72,7 @@ const DOT_OUT = PALETTE.SIGNAL.TEAL;
 const SURFACE_PROJ = PALETTE.SURFACE.SKY;
 const SURFACE_ATTENTION = PALETTE.SURFACE.CELADON;
 const SURFACE_MLP = PALETTE.SURFACE.LILAC;
+const SURFACE_NORM = PALETTE.SURFACE.STONE;
 const BLOCK_FILL_OPACITY = 0.95;
 
 const Z_LINE = 0;
@@ -226,6 +233,8 @@ export const createTransformerBlock: VisualizationFactory = (canvas, mount) => {
 
   type Branch = {
     splitY: number;
+    normY: number;
+    blockY: number;
     mergeY: number;
     label: string;
     inputColor: number;
@@ -235,6 +244,8 @@ export const createTransformerBlock: VisualizationFactory = (canvas, mount) => {
   const branches: Branch[] = [
     {
       splitY: Y_ATTN_SPLIT,
+      normY: Y_ATTN_NORM,
+      blockY: Y_ATTN_BLOCK,
       mergeY: Y_ATTN_MERGE,
       label: "MHA",
       inputColor: DOT_PROJ,
@@ -243,6 +254,8 @@ export const createTransformerBlock: VisualizationFactory = (canvas, mount) => {
     },
     {
       splitY: Y_MLP_SPLIT,
+      normY: Y_MLP_NORM,
+      blockY: Y_MLP_BLOCK,
       mergeY: Y_MLP_MERGE,
       label: "MLP",
       inputColor: DOT_ATTENTION,
@@ -252,7 +265,7 @@ export const createTransformerBlock: VisualizationFactory = (canvas, mount) => {
   ];
 
   for (const b of branches) {
-    const blockCy = (b.splitY + b.mergeY) / 2;
+    const blockCy = b.blockY;
     const blockYBot = blockCy - BLOCK_H / 2;
     const blockYTop = blockCy + BLOCK_H / 2;
     const path = buildHookPath(b.splitY, b.mergeY);
@@ -264,6 +277,17 @@ export const createTransformerBlock: VisualizationFactory = (canvas, mount) => {
       }),
       Z_LINE,
     );
+
+    addBlock(
+      createBlock(BLOCK_X, b.normY, NORM_W, NORM_H, {
+        stroke: PALETTE.INK_SOFT,
+        fill: SURFACE_NORM,
+        strokeOpacity: OPACITY.STROKE,
+        fillOpacity: BLOCK_FILL_OPACITY,
+        radius: 0.035,
+      }),
+    );
+    addText(createLabelText("norm", BLOCK_X, b.normY, 0.065));
 
     addBlock(
       createBlock(BLOCK_X, blockCy, BLOCK_W, BLOCK_H, {
@@ -379,15 +403,6 @@ export const createTransformerBlock: VisualizationFactory = (canvas, mount) => {
       "tokens out",
       STREAM_X,
       Y_TOKEN_OUT + 0.2,
-      0.075,
-      PALETTE.INK_MUTED,
-    ),
-  );
-  addText(
-    createLabelText(
-      "tokens in",
-      STREAM_X,
-      Y_TOKEN_IN - 0.2,
       0.075,
       PALETTE.INK_MUTED,
     ),

@@ -24,6 +24,7 @@ export function createLabelText(
   mesh.text = text;
   mesh.fontSize = size;
   mesh.font = monoFont;
+  (mesh as Text & { sdfGlyphSize: number }).sdfGlyphSize = 128;
   mesh.color = color;
   mesh.anchorX = "center";
   mesh.anchorY = "middle";

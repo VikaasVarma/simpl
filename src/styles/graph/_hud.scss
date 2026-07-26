@@ -1,12 +1,5 @@
 .graph-hud {
-  position: absolute;
   inset: 0;
-  z-index: 6;
-  pointer-events: none;
-}
-
-.graph-hud button {
-  font: inherit;
 }
 
 .graph-hud__topbar {
@@ -14,32 +7,90 @@
   top: max(10px, calc(14px * var(--graph-ui-scale)));
   right: var(--graph-edge-inset);
   left: var(--graph-edge-inset);
-  pointer-events: none;
-}
-
-.graph-hud__home {
-  border: 0;
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  font-family: var(--font-serif);
-  font-size: calc(13px * var(--graph-ui-scale));
-  font-style: italic;
-  pointer-events: auto;
-}
-
-.graph-hud__home:hover {
-  color: var(--accent-emphasis);
+  display: flex;
+  align-items: flex-start;
+  gap: calc(8px * var(--graph-ui-scale));
 }
 
 .graph-hud__actions {
-  position: absolute;
-  top: 0;
-  right: 0;
   display: flex;
+  margin-left: auto;
   align-items: center;
   gap: calc(8px * var(--graph-ui-scale));
-  pointer-events: auto;
+}
+
+.graph-hud__history {
+  --history-line: #9f9587;
+  --history-line-width: 2px;
+  --history-dot: 7px;
+  --history-row: calc(10px * var(--graph-ui-scale));
+  position: relative;
+  display: flex;
+  min-width: 0;
+  max-width: min(calc(210px * var(--graph-ui-scale)), calc(50vw - var(--graph-edge-inset)));
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(4px * var(--graph-ui-scale));
+  overflow: hidden;
+}
+
+.graph-hud__history::before {
+  position: absolute;
+  top: calc(var(--history-row) / 2);
+  bottom: calc(var(--history-row) / 2);
+  left: calc(var(--history-dot) / 2 - var(--history-line-width) / 2);
+  width: var(--history-line-width);
+  background: var(--history-line);
+  content: "";
+}
+
+.graph-hud__history-item {
+  position: relative;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--history-row);
+  padding: 0 0 0 calc(var(--history-dot) + 4px);
+  border: 0;
+  background: transparent;
+  color: var(--text-hint);
+  cursor: pointer;
+  font-family: var(--font-serif);
+  font-size: calc(var(--hierarchy-text-size, 14px) * var(--graph-ui-scale));
+  font-style: italic;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.graph-hud__history-item::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: var(--history-dot);
+  height: var(--history-dot);
+  border: 0;
+  border-radius: 999px;
+  background: var(--history-line);
+  content: "";
+  transform: translateY(-50%);
+}
+
+.graph-hud__history-item[aria-current="page"] {
+  color: var(--text-muted);
+}
+
+.graph-hud__history.is-focused .graph-hud__history-item[aria-current="page"]::before {
+  background: #000;
+}
+
+.graph-hud__history-item:hover {
+  color: var(--accent-emphasis);
+}
+
+.graph-hud__history-item:hover::before {
+  background: var(--accent-emphasis);
 }
 
 .graph-hud__search-button {
@@ -60,7 +111,6 @@
   cursor: pointer;
   font-family: var(--font-mono);
   font-size: calc(0.78rem * var(--graph-ui-scale));
-  pointer-events: auto;
   backdrop-filter: blur(8px);
 }
 
@@ -91,7 +141,6 @@
   background: color-mix(in srgb, var(--bg) 86%, transparent);
   color: var(--text-muted);
   cursor: pointer;
-  pointer-events: auto;
   backdrop-filter: blur(8px);
 }
 
@@ -121,7 +170,6 @@
   color: var(--text);
   font-family: var(--font-serif);
   font-size: calc(14px * var(--graph-ui-scale));
-  pointer-events: auto;
   transform-origin: top right;
   animation: graph-hud-panel-in 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
   backdrop-filter: blur(14px) saturate(120%);

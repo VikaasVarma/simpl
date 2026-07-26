@@ -1,7 +1,5 @@
 .graph-search {
-  position: fixed;
   inset: 0;
-  z-index: 20;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -10,7 +8,6 @@
     var(--graph-edge-inset)
     var(--graph-edge-inset);
   background: color-mix(in srgb, var(--text) 28%, transparent);
-  pointer-events: auto;
   backdrop-filter: blur(4px);
 }
 

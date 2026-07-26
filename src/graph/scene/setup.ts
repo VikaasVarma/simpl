@@ -4,7 +4,6 @@ import { currentGraphData } from "../data";
 import { createGraphView, createRenderer } from "../rendering";
 import { createDomNotes } from "../rendering/dom/notes";
 import { createGraph } from "../simulation";
-import { createFlowLabelLayer } from "../../components/flowLabels";
 import { createHudComponent } from "../../components/hud";
 import { createPopupLayer } from "../../components/popups";
 import type { GraphSceneBase } from "./types";
@@ -19,11 +18,9 @@ export async function createSceneBase(): Promise<GraphSceneBase> {
   const { nodes, links } = createGraph(await currentGraphData());
   const view = createGraphView(nodes);
   const domNotes = createDomNotes(root, view.notes.length);
-  const flowLabels = createFlowLabelLayer();
   const hud = createHudComponent();
   const popups = createPopupLayer();
 
-  root.appendChild(flowLabels.element);
   root.appendChild(hud.element);
   root.appendChild(popups.element);
   threeScene.add(view.flows.group, ...view.notes.map((note) => note.panel));
@@ -40,6 +37,5 @@ export async function createSceneBase(): Promise<GraphSceneBase> {
     domNotes,
     hud,
     popups,
-    flowLabels,
   };
 }

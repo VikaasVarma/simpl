@@ -1,5 +1,5 @@
 export { createCamera, fitCamera, followNode, resizeCamera } from "./view";
-export { eventToWorld, zoomAt } from "./pointer";
+export { eventToWorld, zoomAt, zoomAtScreen } from "./pointer";
 export type { WorldPoint } from "./pointer";
 export { focusCamera } from "./focus";
 export { cameraProfileForViewport } from "./profile";

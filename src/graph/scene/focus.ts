@@ -8,19 +8,16 @@ export function createFocusController(
   state: SceneState,
   redraw: () => void,
 ) {
-  const focusStack: string[] = [];
-
   const focusOn = (node: SimNode, options: FocusOptions = {}) => {
     const app = getApp();
-    const { pushHistory = true, updateHash = true } = options;
-
-    if (pushHistory && state.focusedNode && state.focusedNode.id !== node.id) {
-      focusStack.push(state.focusedNode.id);
-    }
+    const { updateHash = true } = options;
 
     state.focusedNode = node;
-    if (updateHash)
-      history.replaceState(null, "", `#${encodeURIComponent(node.id)}`);
+    if (updateHash) {
+      const url = `#${encodeURIComponent(node.id)}`;
+      if (location.hash === url) history.replaceState(null, "", url);
+      else history.pushState(null, "", url);
+    }
 
     state.cancelFocusAnimation?.();
     redraw();
@@ -45,7 +42,6 @@ export function createFocusController(
     const focusOptions =
       id === null
         ? {
-            pushHistory: false,
             updateHash: false,
             ...options,
           }
@@ -63,38 +59,11 @@ export function createFocusController(
   const defocus = () => {
     const app = getApp();
     state.focusedNode = null;
-    focusStack.length = 0;
     state.cancelFocusAnimation?.();
     state.cancelFocusAnimation = null;
     fitCameraToRoot(app);
     history.replaceState(null, "", `${location.pathname}${location.search}`);
     redraw();
-  };
-
-  const goBack = (): boolean => {
-    const homeId = defaultFocusId();
-    while (focusStack.length > 0) {
-      const id = focusStack.pop();
-      if (!id || id === state.focusedNode?.id) continue;
-      return focusById(id, { pushHistory: false });
-    }
-    if (homeId && state.focusedNode && state.focusedNode.id !== homeId) {
-      return focusById(homeId, { pushHistory: false });
-    }
-    return false;
-  };
-
-  const clearHistory = () => {
-    focusStack.length = 0;
-  };
-
-  const previousId = (): string | null => {
-    const homeId = defaultFocusId();
-    for (let i = focusStack.length - 1; i >= 0; i--) {
-      const id = focusStack[i];
-      if (id && id !== state.focusedNode?.id) return id;
-    }
-    return homeId && state.focusedNode?.id !== homeId ? homeId : null;
   };
 
   const defaultFocusId = (): string | null => {
@@ -112,9 +81,6 @@ export function createFocusController(
     focusOn,
     focusById,
     defocus,
-    goBack,
-    clearHistory,
-    previousId,
   };
 }
 

@@ -53,7 +53,10 @@ export function setBodyContent(body: BodyComponent, node: GraphNode): void {
     if (body.sourceId !== node.id) return;
     body.inner.innerHTML = html;
     mountVisualizations(body.inner, isReader(body.element));
-    requestAnimationFrame(() => updateBodyScrollFlags(body.element));
+    requestAnimationFrame(() => {
+      updateBodyScrollFlags(body.element);
+      body.element.dispatchEvent(new CustomEvent("graph-body-load"));
+    });
   });
 }
 
@@ -64,7 +67,6 @@ export function setBodyProgress(
 ): void {
   body.element.hidden = !body.hasContent || progress <= 0;
   body.element.dataset.reader = reader ? "true" : "false";
-  body.element.style.pointerEvents = reader ? "auto" : "none";
   body.element.style.opacity = String(progress);
   setVisualizationsActive(body.inner, reader && !body.element.hidden);
 }

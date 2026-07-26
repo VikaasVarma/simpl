@@ -1,4 +1,9 @@
-import { createHomeButton } from "./home";
+import {
+  bindHierarchyRail,
+  createHierarchyRailComponent,
+  type HierarchyRailComponent,
+  renderHierarchyRail,
+} from "./hierarchy";
 import {
   bindSearch,
   createSearchComponent,
@@ -12,12 +17,12 @@ import {
   type SettingsComponent,
 } from "./settings";
 
-export { applyHudSettings };
+export { applyHudSettings, renderHierarchyRail };
 export type { HudSettings };
 
 export type HudComponent = {
   element: HTMLElement;
-  home: HTMLButtonElement;
+  hierarchy: HierarchyRailComponent;
   search: SearchComponent;
   settings: SettingsComponent;
 };
@@ -26,7 +31,7 @@ export function createHudComponent(): HudComponent {
   const element = document.createElement("div");
   const topbar = document.createElement("div");
   const actions = document.createElement("div");
-  const home = createHomeButton();
+  const hierarchy = createHierarchyRailComponent();
   const search = createSearchComponent();
   const settings = createSettingsComponent();
 
@@ -34,21 +39,21 @@ export function createHudComponent(): HudComponent {
   topbar.className = "graph-hud__topbar";
   actions.className = "graph-hud__actions";
   actions.append(search.button, settings.button);
-  topbar.append(home, actions);
+  topbar.append(hierarchy.element, actions);
   element.append(topbar, search.overlay, settings.panel);
 
-  return { element, home, search, settings };
+  return { element, hierarchy, search, settings };
 }
 
 export function bindHud(
   hud: HudComponent,
   nodes: Parameters<typeof bindSearch>[1],
   settings: HudSettings,
-  onHome: () => void,
   onSearchFocus: (id: string) => boolean,
   onSettings: (settings: HudSettings) => void,
+  onHistoryFocus: (id: string) => boolean,
 ): void {
-  hud.home.addEventListener("click", onHome);
+  bindHierarchyRail(hud.hierarchy, onHistoryFocus);
   bindSearch(hud.search, nodes, onSearchFocus);
   bindSettings(hud.settings, settings, onSettings);
   document.addEventListener("pointerdown", (event) => {

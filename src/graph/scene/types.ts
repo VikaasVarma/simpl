@@ -7,7 +7,7 @@ import type { FlowLayout } from "../flows";
 import type { createSimulation } from "../simulation";
 import type { HudComponent, HudSettings } from "../../components/hud";
 import type { PopupLayer } from "../../components/popups";
-import type { FlowLabelLayer } from "../../components/flowLabels";
+import type { Point } from "../flows";
 
 export type GraphSceneBase = {
   root: HTMLDivElement;
@@ -21,7 +21,6 @@ export type GraphSceneBase = {
   domNotes: DomNoteLayer;
   hud: HudComponent;
   popups: PopupLayer;
-  flowLabels: FlowLabelLayer;
 };
 
 export type GraphSceneApp = GraphSceneBase & {
@@ -36,11 +35,11 @@ export type SceneState = {
   currentNoteLayouts: readonly NoteLayout[];
   hoveredFlowIds: ReadonlySet<string>;
   activeFlowIds: ReadonlySet<string>;
+  pointerScreen: Point | null;
   settings: HudSettings;
   drawnHtmlNotes: number;
 };
 
 export type FocusOptions = {
-  pushHistory?: boolean;
   updateHash?: boolean;
 };

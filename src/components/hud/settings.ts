@@ -106,10 +106,18 @@ export function bindSettings(
 }
 
 export function applyHudSettings(settings: HudSettings): void {
+  const textIndex = Math.max(
+    0,
+    TEXT_SCALES.findIndex((scale) => scale === settings.textScale),
+  );
   document.documentElement.dataset.theme = settings.theme;
   document.documentElement.style.setProperty(
     "--reader-text-scale",
     String(settings.textScale),
+  );
+  document.documentElement.style.setProperty(
+    "--hierarchy-text-size",
+    `${10 + textIndex * 2}px`,
   );
   document.documentElement.style.setProperty(
     "--reader-line-width",

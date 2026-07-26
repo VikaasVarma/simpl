@@ -1,12 +1,5 @@
-.graph-dom-notes,
-.graph-dom-measure {
-  position: absolute;
-  pointer-events: none;
-}
-
 .graph-dom-notes {
   inset: 0;
-  z-index: 2;
   overflow: hidden;
 }
 
@@ -22,8 +15,9 @@
   position: absolute;
   box-sizing: border-box;
   overflow: hidden;
-  pointer-events: none;
   user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
   color: var(--text);
   font-family: var(--font-serif);
   text-align: center;
@@ -35,7 +29,6 @@
   position: absolute;
   inset: auto 0 0;
   height: var(--note-fade-height);
-  pointer-events: none;
   content: "";
   background: linear-gradient(to bottom, transparent, var(--note-background));
 }
@@ -84,7 +77,6 @@
 
 .graph-dom-note__summary {
   position: relative;
-  z-index: 1;
   max-width: min(var(--note-reading-col), 100%);
   margin: var(--note-gap) auto 0;
   color: var(--text-muted);
@@ -95,13 +87,11 @@
 
 .graph-dom-note__link {
   position: relative;
-  z-index: 2;
   display: flex;
   flex: 0 0 auto;
   justify-content: center;
   margin: calc(var(--note-gap) * 0.8) 0 0;
   overflow: visible;
-  pointer-events: auto;
   text-align: center;
   font-family: var(--font-mono);
   font-size: 0.72em;

@@ -1,6 +1,5 @@
-import { cameraProfileForViewport } from "../camera";
+import { cameraProfileForViewport, screenToWorld } from "../camera";
 import { paletteForTheme } from "../constants";
-import { drawFlowLabels, flowLabelsFor } from "../../components/flowLabels";
 import { drawDomNotes } from "../rendering/dom/notes";
 import { drawFlows, drawHalos, drawNotes } from "../rendering";
 import {
@@ -11,6 +10,7 @@ import {
 import type { FlowEndpoint, Rect } from "../flows";
 import type { FlowLine } from "../rendering/graph/flows";
 import type { GraphSceneApp, SceneState } from "./types";
+import { flowIdsForHit, hitTestScene } from "./hitTest";
 
 export function redrawScene(app: GraphSceneApp, state: SceneState): void {
   const { width, height } = app.root.getBoundingClientRect();
@@ -81,6 +81,7 @@ function redrawFlows(app: GraphSceneApp, state: SceneState): void {
     width,
     height,
   );
+  updateHoverFromPointer(app, state, width, height);
   drawHalos(app.view.notes, state.cachedFlowLayouts);
   drawFlows(
     app.view.flows,
@@ -93,30 +94,32 @@ function redrawFlows(app: GraphSceneApp, state: SceneState): void {
       }),
     ),
   );
-  drawFlowLabels(
-    app.flowLabels,
-    flowLabelsFor({
-      flows: state.cachedFlowLayouts,
-      camera: app.camera,
-      width,
-      height,
-      targetOpacity: (id) => labelOpacity(state, id),
-      sourceTitle: (id) => app.nodeById.get(id)!.title,
-    }),
+}
+
+function updateHoverFromPointer(
+  app: GraphSceneApp,
+  state: SceneState,
+  width: number,
+  height: number,
+): void {
+  const screen = state.pointerScreen;
+  if (!screen) {
+    state.hoveredFlowIds = new Set();
+    return;
+  }
+  const hit = hitTestScene(
+    app,
+    state,
+    screen,
+    screenToWorld(screen, app.camera, width, height),
   );
+  state.hoveredFlowIds = flowIdsForHit(app, hit);
 }
 
 function noteRect(state: SceneState, index: number): Rect {
   const rect = state.currentNoteLayouts[index]?.rect;
   if (!rect) throw new Error(`Missing note layout for index ${index}`);
   return rect;
-}
-
-function labelOpacity(state: SceneState, id: string): number {
-  const progress =
-    state.currentNoteLayouts.find((layout) => layout?.id === id)
-      ?.bodyProgress ?? 0;
-  return progress <= 0 ? 0 : 0.24 + progress * 0.76;
 }
 
 function sourceEndpointForLink(

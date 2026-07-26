@@ -1,3 +1,49 @@
+.graph-dom-note__body a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.graph-dom-note__body .footnote-ref,
+.graph-dom-note__body .footnote-backref {
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.72em;
+  text-decoration: none;
+}
+
+.graph-dom-note__body .social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05em;
+  height: 1.05em;
+  margin: 0 0.25em;
+  vertical-align: -0.18em;
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.graph-dom-note__body .social-link:hover,
+.graph-dom-note__body .social-link:focus-visible {
+  color: var(--text);
+}
+
+.graph-dom-note__body .social-link__icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: currentColor;
+  -webkit-mask-image: var(--social-icon);
+  mask-image: var(--social-icon);
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
 .graph-highlight {
   --c: var(--connection-0);
   border-radius: 4px;
@@ -53,14 +99,12 @@
     0 calc(100% - 0.54em);
 }
 
-.graph-highlight:hover,
-.graph-highlight.is-open {
+.graph-highlight:hover {
   background-color: color-mix(in srgb, var(--c) 36%, transparent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 12%, transparent);
 }
 
-.graph-highlight--multi:hover,
-.graph-highlight--multi.is-open {
+.graph-highlight--multi:hover {
   background-color: color-mix(in srgb, var(--c0, var(--c)) 30%, transparent);
 }
 

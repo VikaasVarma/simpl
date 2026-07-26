@@ -18,9 +18,6 @@ export function hidePopups(layer: PopupLayer): void {
     popup.addEventListener("animationend", remove, { once: true });
     window.setTimeout(remove, 220);
   });
-  document
-    .querySelectorAll(".graph-highlight.is-open")
-    .forEach((item) => item.classList.remove("is-open"));
 }
 
 export function hasPopups(layer: PopupLayer): boolean {
@@ -63,27 +60,14 @@ export function showConnectionPopups(
 }
 
 function stackPopups(layer: PopupLayer, popups: HTMLElement[]): void {
-  appendStack(
-    layer,
-    "left",
-    popups.filter((popup) => popup.dataset.side === "left"),
-  );
-  appendStack(
-    layer,
-    "right",
-    popups.filter((popup) => popup.dataset.side === "right"),
-  );
+  appendStack(layer, popups);
 }
 
-function appendStack(
-  layer: PopupLayer,
-  side: "left" | "right",
-  popups: HTMLElement[],
-): void {
+function appendStack(layer: PopupLayer, popups: HTMLElement[]): void {
   if (!popups.length) return;
   const stack = document.createElement("div");
   stack.className = "graph-popup-stack";
-  stack.dataset.side = side;
+  // One stack assigns vertical slots; each popup's data-side owns left/right placement.
   stack.append(...popups);
   layer.element.append(stack);
 }

@@ -6,7 +6,6 @@ const STORAGE_KEY = "working-notes:graph-debug:v1";
 export function mountDebug(app: GraphSceneApp, state: SceneState): void {
   const debug = createDebugPanel();
   app.root.append(debug.element);
-  document.head.append(debug.style);
 
   let enabled = localStorage.getItem(STORAGE_KEY) !== "0";
   let frames = 0;
@@ -81,7 +80,6 @@ type DebugPanel = {
   graphMode: HTMLButtonElement;
   settle: HTMLButtonElement;
   saveSeed: HTMLButtonElement;
-  style: HTMLStyleElement;
 };
 
 function createDebugPanel(): DebugPanel {
@@ -96,7 +94,6 @@ function createDebugPanel(): DebugPanel {
   const controls = document.createElement("div");
   const settle = document.createElement("button");
   const saveSeed = document.createElement("button");
-  const style = document.createElement("style");
 
   element.className = "graph-debug-panel";
   toggle.type = "button";
@@ -115,84 +112,6 @@ function createDebugPanel(): DebugPanel {
   body.append(graphMode);
   body.append(controls);
   element.append(toggle, body);
-  style.textContent = `
-    .graph-debug .graph-dom-note:not([hidden]) {
-      outline: 1px solid color-mix(in srgb, var(--accent) 58%, transparent);
-      outline-offset: -1px;
-    }
-
-    .graph-debug-panel {
-      position: absolute;
-      left: 14px;
-      bottom: 12px;
-      z-index: 7;
-      color: var(--text-muted);
-      font: 500 12px / 1.35 var(--font-mono);
-      pointer-events: auto;
-    }
-
-    .graph-debug-panel__toggle {
-      padding: 4px 6px;
-      border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-      border-radius: 6px;
-      background: color-mix(in srgb, var(--bg) 82%, transparent);
-      color: var(--text-muted);
-      cursor: pointer;
-      font: inherit;
-    }
-
-    .graph-debug-panel__body {
-      min-width: 152px;
-      margin-top: 6px;
-      padding: 7px 8px;
-      border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-      border-radius: 8px;
-      background: color-mix(in srgb, var(--bg) 88%, transparent);
-      backdrop-filter: blur(8px);
-    }
-
-    .graph-debug-panel__row {
-      display: flex;
-      justify-content: space-between;
-      gap: 14px;
-    }
-
-    .graph-debug-panel__mode {
-      width: 100%;
-      margin-top: 6px;
-      padding: 3px 5px;
-      border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-      border-radius: 6px;
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      font: inherit;
-      text-align: left;
-    }
-
-    .graph-debug-panel__controls {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-top: 6px;
-    }
-
-    .graph-debug-panel__button {
-      min-width: 0;
-      padding: 3px 5px;
-      border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-      border-radius: 6px;
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      font: inherit;
-    }
-
-    .graph-debug-panel__button.is-active {
-      border-color: color-mix(in srgb, var(--accent) 68%, transparent);
-      color: var(--accent);
-    }
-  `;
 
   return {
     element,
@@ -205,7 +124,6 @@ function createDebugPanel(): DebugPanel {
     graphMode,
     settle,
     saveSeed,
-    style,
   };
 }
 

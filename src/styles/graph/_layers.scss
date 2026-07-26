@@ -1,0 +1,54 @@
+.graph canvas,
+.graph-dom-notes,
+.graph-dom-measure,
+.graph-popups,
+.graph-hud,
+.graph-search,
+.graph-debug-panel {
+  position: absolute;
+}
+
+.graph canvas {
+  z-index: 1;
+}
+
+.graph-dom-notes {
+  z-index: 2;
+}
+
+.graph-popups {
+  z-index: 5;
+}
+
+.graph-hud {
+  z-index: 6;
+}
+
+.graph-debug-panel {
+  z-index: 7;
+}
+
+.graph-search {
+  z-index: 20;
+}
+
+.graph-dom-notes,
+.graph-dom-measure,
+.graph-popups,
+.graph-hud,
+.graph-dom-note,
+.graph-dom-note::after,
+.graph-dom-note__body {
+  pointer-events: none;
+}
+
+.graph-dom-note[data-regime="reader"],
+.graph-dom-note[data-regime="reader"] .graph-dom-note__body,
+.graph-popup,
+.graph-hud__history,
+.graph-hud__actions,
+.graph-hud__panel,
+.graph-search,
+.graph-debug-panel {
+  pointer-events: auto;
+}

@@ -5,6 +5,7 @@ import {
   followNode,
   resizeCamera,
   zoomAt,
+  zoomAtScreen,
 } from "../camera";
 import { isFixedNode } from "../simulation";
 import {
@@ -14,7 +15,12 @@ import {
 } from "../../components/popups";
 import { clamp, smoothstep } from "../utils/math";
 import { fitCameraToRoot } from "./focus";
-import { hitTestScene, localPoint, type SceneHit } from "./hitTest";
+import {
+  flowIdsForHit,
+  hitTestScene,
+  localPoint,
+  type SceneHit,
+} from "./hitTest";
 import type { FocusOptions, GraphSceneApp, SceneState } from "./types";
 import type { CameraProfile } from "../camera";
 import type { SimNode } from "../simulation";
@@ -28,6 +34,7 @@ const DRAG_PX = 4;
 // -----------------------------------------------------------------------------
 
 type DragState = { node: SimNode; offset: Point } | null;
+type PinchState = { center: Point; distance: number } | null;
 type PointerState = {
   id: number;
   startScreen: Point;
@@ -40,9 +47,7 @@ export type SceneInputActions = {
   redraw: () => void;
   focusOn: (node: SimNode, options?: FocusOptions) => void;
   focusById: (id?: string | null, options?: FocusOptions) => boolean;
-  defocus: () => void;
-  goBack: () => boolean;
-  clearHistory: () => void;
+  focusParent: () => boolean;
 };
 
 // -----------------------------------------------------------------------------
@@ -57,9 +62,14 @@ export function bindSceneInput(
   let pointer: PointerState = null;
   let drag: DragState = null;
   let pan: WorldPoint | null = null;
+  let pinch: PinchState = null;
+  const activePointers = new Map<number, Point>();
 
   app.root.addEventListener("pointerdown", onPointerDown);
   app.root.addEventListener("pointermove", onPointerMove);
+  app.root.addEventListener("pointerleave", onPointerLeave);
+  app.root.addEventListener("mouseover", onMouseHover);
+  app.root.addEventListener("mouseout", onMouseLeave);
   app.root.addEventListener("pointerup", onPointerRelease);
   app.root.addEventListener("pointercancel", onPointerRelease);
   app.root.addEventListener("lostpointercapture", onPointerRelease);
@@ -71,6 +81,14 @@ export function bindSceneInput(
 
   function onPointerDown(event: PointerEvent): void {
     const screen = localPoint(app.root, event.clientX, event.clientY);
+    state.pointerScreen = screen;
+    activePointers.set(event.pointerId, screen);
+    if (activePointers.size >= 2) {
+      app.root.setPointerCapture(event.pointerId);
+      beginPinch(event);
+      return;
+    }
+
     const world = eventToWorld(event, app.renderer.domElement, app.camera);
     const hit = hitTestScene(app, state, screen, world);
     if (domOwnsPointer(hit)) return;
@@ -89,6 +107,18 @@ export function bindSceneInput(
   }
 
   function onPointerMove(event: PointerEvent): void {
+    state.pointerScreen = localPoint(app.root, event.clientX, event.clientY);
+    if (activePointers.has(event.pointerId)) {
+      activePointers.set(
+        event.pointerId,
+        state.pointerScreen,
+      );
+    }
+    if (pinch) {
+      updatePinch(event);
+      return;
+    }
+
     if (!pointer) {
       updateHover(app, state, actions.redraw, event);
       return;
@@ -98,7 +128,10 @@ export function bindSceneInput(
     const p = eventToWorld(event, app.renderer.domElement, app.camera);
     if (pointer.mode === "pending" && moved(event, pointer)) {
       state.focusedNode = null;
-      if (pointer.hit.kind === "note") {
+      if (pointer.hit.kind === "dom-note") {
+        pointer.mode = "pan";
+        pan = pointer.startWorld;
+      } else if (pointer.hit.kind === "note") {
         const node = pointer.hit.node;
         if (isFixedNode(node)) {
           pointer.mode = "pan";
@@ -128,6 +161,8 @@ export function bindSceneInput(
   }
 
   function onPointerRelease(event: PointerEvent): void {
+    activePointers.delete(event.pointerId);
+    if (pinch && activePointers.size < 2) pinch = null;
     if (app.root.hasPointerCapture(event.pointerId)) {
       app.root.releasePointerCapture(event.pointerId);
     }
@@ -140,6 +175,8 @@ export function bindSceneInput(
       pointer.hit.kind !== "empty"
     ) {
       if (pointer.hit.kind === "note") actions.focusOn(pointer.hit.node);
+      else if (pointer.hit.kind === "dom-note")
+        actions.focusById(pointer.hit.id);
       else if (pointer.hit.kind === "flow")
         focusFlow(state, actions.focusById, pointer.hit.id);
       else if (pointer.hit.kind === "highlight")
@@ -155,8 +192,79 @@ export function bindSceneInput(
     pan = null;
   }
 
+  function beginPinch(event: PointerEvent): void {
+    event.preventDefault();
+    state.cancelFocusAnimation?.();
+    state.cancelFocusAnimation = null;
+    releaseDrag();
+    pointer = null;
+    pan = null;
+    pinch = samplePinch();
+  }
+
+  function updatePinch(event: PointerEvent): void {
+    event.preventDefault();
+    const next = samplePinch();
+    if (!next || !pinch) return;
+    const { width, height } = app.root.getBoundingClientRect();
+    const profile = cameraProfileForViewport(width, height);
+    const targetZoom = clamp(
+      app.camera.zoom * (next.distance / pinch.distance),
+      profile.minZoom,
+      profile.maxZoom,
+    );
+    zoomAtScreen(app.camera, next.center, app.renderer.domElement, targetZoom);
+    app.camera.position.x +=
+      (pinch.center.x - next.center.x) / app.camera.zoom;
+    app.camera.position.y -=
+      (pinch.center.y - next.center.y) / app.camera.zoom;
+    app.camera.updateMatrixWorld();
+    pinch = next;
+    if (state.focusedNode && app.camera.zoom <= profile.regimes.summary) {
+      state.focusedNode = null;
+      history.replaceState(null, "", `${location.pathname}${location.search}`);
+    }
+    actions.redraw();
+  }
+
+  function samplePinch(): PinchState {
+    const points = [...activePointers.values()];
+    if (points.length < 2) return null;
+    const [a, b] = points;
+    return {
+      center: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
+      distance: Math.max(Math.hypot(a.x - b.x, a.y - b.y), 1),
+    };
+  }
+
+  function releaseDrag(): void {
+    if (!drag) return;
+    app.simulation.release(drag.node);
+    drag = null;
+  }
+
   function onWheel(event: WheelEvent): void {
     zoomFromWheel(app, state, actions, event);
+  }
+
+  function onPointerLeave(): void {
+    state.pointerScreen = null;
+    if (state.hoveredFlowIds.size) {
+      state.hoveredFlowIds = new Set();
+      actions.redraw();
+    }
+  }
+
+  function onMouseHover(event: MouseEvent): void {
+    if (pointer || pinch) return;
+    state.pointerScreen = localPoint(app.root, event.clientX, event.clientY);
+    updateHover(app, state, actions.redraw, event);
+  }
+
+  function onMouseLeave(event: MouseEvent): void {
+    if (event.relatedTarget instanceof Node && app.root.contains(event.relatedTarget))
+      return;
+    onPointerLeave();
   }
 }
 
@@ -167,7 +275,7 @@ export function bindSceneInput(
 function zoomFromWheel(
   app: GraphSceneApp,
   state: SceneState,
-  actions: Pick<SceneInputActions, "redraw" | "clearHistory">,
+  actions: Pick<SceneInputActions, "redraw">,
   event: WheelEvent,
 ): void {
   event.preventDefault();
@@ -183,7 +291,6 @@ function zoomFromWheel(
   );
   if (state.focusedNode && app.camera.zoom <= profile.regimes.summary) {
     state.focusedNode = null;
-    actions.clearHistory();
     history.replaceState(null, "", `${location.pathname}${location.search}`);
   }
   actions.redraw();
@@ -258,7 +365,7 @@ function updateHover(
   app: GraphSceneApp,
   state: SceneState,
   redraw: () => void,
-  event: PointerEvent,
+  event: PointerEvent | MouseEvent,
 ): void {
   const screen = localPoint(app.root, event.clientX, event.clientY);
   const hit = hitTestScene(
@@ -280,19 +387,7 @@ function updateHover(
 // -----------------------------------------------------------------------------
 
 function domOwnsPointer(hit: SceneHit): boolean {
-  return ["body", "hud", "link", "popup"].includes(hit.kind);
-}
-
-function flowIdsForHit(app: GraphSceneApp, hit: SceneHit): ReadonlySet<string> {
-  if (hit.kind === "flow") return new Set([hit.id]);
-  if (hit.kind !== "highlight") return new Set();
-
-  const source = app.nodeById.get(hit.sourceId);
-  const group = source?.connections.find((item) => item.id === hit.groupId);
-  if (!source || !group) return new Set();
-  return new Set(
-    group.connections.map((connection) => flowId(source.id, connection.target)),
-  );
+  return ["hud", "link", "popup"].includes(hit.kind);
 }
 
 function sameIds(a: ReadonlySet<string>, b: ReadonlySet<string>): boolean {
@@ -330,14 +425,6 @@ function activateHighlight(
     focusById,
     () => closePopups(app, state, redraw),
   );
-  document
-    .querySelectorAll(".graph-highlight.is-open")
-    .forEach((item) => item.classList.remove("is-open"));
-  document
-    .querySelector(
-      `.graph-highlight[data-source-id="${cssEscape(hit.sourceId)}"][data-group-id="${cssEscape(hit.groupId)}"]`,
-    )
-    ?.classList.add("is-open");
   redraw();
 }
 
@@ -366,10 +453,6 @@ function flowId(sourceId: string, targetId: string): string {
   return `${sourceId}->${targetId}`;
 }
 
-function cssEscape(value: string): string {
-  return CSS.escape(value);
-}
-
 function closePopups(
   app: GraphSceneApp,
   state: SceneState,
@@ -393,14 +476,10 @@ function bindHistory(
 ): void {
   window.addEventListener("hashchange", () => {
     if (location.hash) {
-      actions.clearHistory();
       actions.focusById(decodeURIComponent(location.hash.slice(1)), {
-        pushHistory: false,
         updateHash: false,
       });
-    } else {
-      actions.defocus();
-    }
+    } else actions.focusById(null, { updateHash: false });
   });
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || isTyping(event.target)) return;
@@ -409,13 +488,8 @@ function bindHistory(
       event.preventDefault();
       return;
     }
-    if (actions.goBack()) {
+    if (actions.focusParent()) {
       event.preventDefault();
-      return;
-    }
-    if (state.focusedNode) {
-      event.preventDefault();
-      actions.defocus();
     }
   });
 }

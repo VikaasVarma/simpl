@@ -66,19 +66,19 @@ export function bindDomNoteScroll(
   redraw: () => void,
 ): void {
   let queued = false;
+  const queueRedraw = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      redraw();
+    });
+  };
   layer.notes.forEach((note) => {
-    note.body.element.addEventListener(
-      "scroll",
-      () => {
-        if (queued) return;
-        queued = true;
-        requestAnimationFrame(() => {
-          queued = false;
-          redraw();
-        });
-      },
-      { passive: true },
-    );
+    note.body.element.addEventListener("scroll", queueRedraw, {
+      passive: true,
+    });
+    note.body.element.addEventListener("graph-body-load", queueRedraw);
   });
 }
 
@@ -110,6 +110,7 @@ export function drawDomNotes(
 
     const title = data.node.title;
     const summary = data.node.summary;
+    note.element.dataset.noteId = data.node.id;
     const endpoint = endpointHeights(layer, title, summary, measureKey);
     const lod = sampleLod(camera.zoom, profile, {
       title: endpoint.title,

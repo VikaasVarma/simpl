@@ -1,10 +1,11 @@
 @use "shell";
+@use "layers";
 @use "hud";
 @use "search";
 @use "notes";
-@use "body";
+@use "note-body";
+@use "inline";
 @use "code";
-@use "highlights";
-@use "flow-labels";
 @use "popups";
 @use "viz";
+@use "debug";

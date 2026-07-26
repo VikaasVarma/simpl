@@ -5,11 +5,11 @@ import type { GraphSceneApp, SceneState } from "./types";
 
 export type SceneHit =
   | { kind: "note"; id: string; node: SimNode }
+  | { kind: "dom-note"; id: string }
   | { kind: "flow"; id: string }
   | { kind: "highlight"; sourceId: string; groupId: string }
   | { kind: "popup"; id: string }
   | { kind: "link"; href: string }
-  | { kind: "body"; noteId?: string }
   | { kind: "hud" }
   | { kind: "empty" };
 
@@ -48,6 +48,23 @@ export function hitTestScene(
   return flow ? { kind: "flow", id: flow.id } : { kind: "empty" };
 }
 
+export function flowIdsForHit(
+  app: GraphSceneApp,
+  hit: SceneHit,
+): ReadonlySet<string> {
+  if (hit.kind === "flow") return new Set([hit.id]);
+  if (hit.kind !== "highlight") return new Set();
+
+  const source = app.nodeById.get(hit.sourceId);
+  const group = source?.connections.find((item) => item.id === hit.groupId);
+  if (!source || !group) return new Set();
+  return new Set(
+    group.connections.map((connection) =>
+      `${source.id}->${connection.target}`,
+    ),
+  );
+}
+
 function hitTestDom(root: HTMLElement, screen: Point): SceneHit | null {
   const rect = root.getBoundingClientRect();
   const element = document.elementFromPoint(
@@ -58,9 +75,6 @@ function hitTestDom(root: HTMLElement, screen: Point): SceneHit | null {
 
   const popup = element.closest<HTMLElement>(".graph-popup");
   if (popup) return { kind: "popup", id: popup.dataset.targetId ?? "" };
-
-  const flowLabel = element.closest<HTMLElement>(".graph-flow-label");
-  if (flowLabel) return { kind: "flow", id: flowLabel.dataset.flowId ?? "" };
 
   const link = element.closest("a[href]");
   if (link instanceof HTMLAnchorElement)
@@ -76,13 +90,7 @@ function hitTestDom(root: HTMLElement, screen: Point): SceneHit | null {
       groupId: highlight.dataset.groupId ?? "",
     };
 
-  const body = element.closest(".graph-dom-note__body");
-  if (body)
-    return {
-      kind: "body",
-      noteId:
-        body.closest<HTMLElement>(".graph-dom-note")?.dataset.noteId ??
-        undefined,
-    };
+  const note = element.closest<HTMLElement>(".graph-dom-note");
+  if (note?.dataset.noteId) return { kind: "dom-note", id: note.dataset.noteId };
   return null;
 }
