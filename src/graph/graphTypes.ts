@@ -22,6 +22,7 @@ export type GraphBodyPart =
   | {
       type: "code";
       language: string;
+      inline: boolean;
       text: string;
     }
   | {
@@ -42,6 +43,7 @@ export type GraphNode = {
   date: string;
   link: string;
   hasBody: boolean;
+  hasCode: boolean;
   searchText: string;
   tags: readonly GraphNodeTag[];
   connections: readonly GraphConnectionGroup[];

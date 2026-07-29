@@ -88,6 +88,7 @@
 .graph-dom-note__link {
   position: relative;
   display: flex;
+  gap: 6px;
   flex: 0 0 auto;
   justify-content: center;
   margin: calc(var(--note-gap) * 0.8) 0 0;
@@ -103,17 +104,40 @@
   display: none;
 }
 
-.graph-dom-note__link a {
-  display: inline-block;
-  padding: 2px 8px;
+.graph-dom-note__link a,
+.graph-dom-note__code-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 20px;
+  padding: 2px 9px;
   border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  border-radius: 999px;
+  border-radius: 7px;
   background: color-mix(in srgb, var(--bg-elevated) 30%, transparent);
   color: var(--text-muted);
+  font: inherit;
   text-decoration: none;
+  appearance: none;
 }
 
-.graph-dom-note__link a:hover {
+.graph-dom-note__code-toggle {
+  width: 13.2ch;
+  cursor: pointer;
+}
+
+.graph-dom-note__link-icon {
+  width: 1em;
+  height: 1em;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.graph-dom-note__link a:hover,
+.graph-dom-note__code-toggle:hover {
   border-color: var(--accent);
   color: var(--accent-emphasis);
 }

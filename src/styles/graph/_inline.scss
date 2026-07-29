@@ -4,7 +4,19 @@
   text-underline-offset: 2px;
 }
 
-.graph-dom-note__body .footnote-ref,
+.graph-dom-note__body .footnote-ref {
+  margin-left: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 0.58em;
+  line-height: 0;
+  vertical-align: super;
+}
+
+.graph-dom-note__body .footnote-ref a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
 .graph-dom-note__body .footnote-backref {
   color: var(--accent);
   font-family: var(--font-mono);

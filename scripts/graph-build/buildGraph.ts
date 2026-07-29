@@ -29,6 +29,7 @@ export function buildGraph(
       rawBody: _rawBody,
       body: _body,
       bodyHtml: _bodyHtml,
+      codeHtml: _codeHtml,
       ...note
     }) => ({
       ...note,

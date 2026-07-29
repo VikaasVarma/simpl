@@ -1,6 +1,7 @@
 import * as THREE from "three";
 
-const PIXEL_RATIO = Math.min(window.devicePixelRatio * 4, 8);
+const PIXEL_RATIO = Math.min(window.devicePixelRatio * 5, 12);
+const COMPOSITION_ASPECT = 16 / 9;
 
 export function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
   const renderer = new THREE.WebGLRenderer({
@@ -23,6 +24,21 @@ export function fit(
   const h = canvas.clientHeight;
   if (w === 0 || h === 0) return;
   renderer.setSize(w, h, /* updateStyle */ false);
+}
+
+export function fitComposition(
+  renderer: THREE.WebGLRenderer,
+  canvas: HTMLCanvasElement,
+  camera: THREE.OrthographicCamera,
+  halfH: number,
+  halfW = halfH * COMPOSITION_ASPECT,
+): void {
+  camera.left = -halfW;
+  camera.right = halfW;
+  camera.top = halfH;
+  camera.bottom = -halfH;
+  camera.updateProjectionMatrix();
+  fit(renderer, canvas);
 }
 
 export function onMountResize(

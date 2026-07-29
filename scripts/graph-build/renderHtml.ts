@@ -19,7 +19,7 @@ type VizPart = Extract<GraphBodyPart, { type: "viz" }>;
 type RenderToken =
   | { type: "connection"; part: ConnectionPart; note: NoteDraft }
   | { type: "math"; part: MathPart }
-  | { type: "code"; text: string; language?: string }
+  | { type: "code"; text: string; language: string }
   | { type: "viz"; part: VizPart };
 
 const TOKEN_RE = /\uE000(\d+)\uE001/g;
@@ -48,6 +48,11 @@ markdown.renderer.rules.link_open = (tokens, index, options, env, self) => {
 markdown.renderer.rules.table_open = () =>
   '<div class="table-wrap" data-wheel-x><table>';
 markdown.renderer.rules.table_close = () => "</table></div>";
+markdown.renderer.rules.footnote_caption = (tokens, index) => {
+  let n = Number(tokens[index].meta.id + 1).toString();
+  if (tokens[index].meta.subId > 0) n += `:${tokens[index].meta.subId}`;
+  return n;
+};
 
 export function renderNoteBody(note: NoteDraft): string {
   const tokens: RenderToken[] = [];
@@ -61,15 +66,27 @@ export function renderNoteBody(note: NoteDraft): string {
           ? blockToken(tokens, { type: "math", part })
           : token(tokens, { type: "math", part });
       if (part.type === "code")
-        return blockToken(tokens, {
-          type: "code",
-          text: part.text,
-          language: part.language,
-        });
+        return part.inline
+          ? blockToken(tokens, {
+              type: "code",
+              text: part.text,
+              language: part.language,
+            })
+          : "";
       return blockToken(tokens, { type: "viz", part });
     })
     .join("");
   return renderMarkdown(source, tokens);
+}
+
+export function renderCodeBody(note: NoteDraft): string {
+  return note.body
+    .flatMap((part) =>
+      part.type === "code" && !part.inline
+        ? [codeBlock(part.text, part.language)]
+        : [],
+    )
+    .join("");
 }
 
 export function renderMarkdownBody(value: string): string {

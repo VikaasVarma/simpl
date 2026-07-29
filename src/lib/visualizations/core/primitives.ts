@@ -224,6 +224,7 @@ export function createBlock(
       color: fill,
       transparent: true,
       opacity: fillOpacity,
+      depthTest: false,
       depthWrite: false,
     });
     group.add(new THREE.Mesh(geo, mat));
@@ -254,6 +255,106 @@ export function createBlock(
       for (const o of owned) o.dispose();
     },
   };
+}
+
+export function createTrapezoidBlock(
+  cx: number,
+  cy: number,
+  width: number,
+  height: number,
+  point: "up" | "down",
+  opts: BlockOptions = {},
+): Primitive {
+  const stroke = opts.stroke ?? PALETTE.INK_SOFT;
+  const fill = opts.fill ?? PALETTE.ACCENT;
+  const strokeOpacity = opts.strokeOpacity ?? OPACITY.STROKE;
+  const fillOpacity = opts.fillOpacity ?? OPACITY.FILL;
+  const r = opts.radius ?? Math.min(width, height) * 0.12;
+  const w = width / 2;
+  const h = height / 2;
+  const narrow = w * 0.48;
+  const top = point === "up" ? narrow : w;
+  const bottom = point === "up" ? w : narrow;
+  const shape = roundedPolygon(
+    [
+      [cx - top, cy + h],
+      [cx + top, cy + h],
+      [cx + bottom, cy - h],
+      [cx - bottom, cy - h],
+    ],
+    r,
+  );
+
+  const group = new THREE.Group();
+  const owned: { dispose: () => void }[] = [];
+  if (fill !== null) {
+    const geo = new THREE.ShapeGeometry(shape);
+    const mat = new THREE.MeshBasicMaterial({
+      color: fill,
+      transparent: true,
+      opacity: fillOpacity,
+      depthTest: false,
+      depthWrite: false,
+    });
+    group.add(new THREE.Mesh(geo, mat));
+    owned.push(geo, mat);
+  }
+
+  const pts = shape.getPoints(64);
+  const verts: number[] = [];
+  for (let i = 0; i < pts.length; i++) {
+    const a = pts[i];
+    const b = pts[(i + 1) % pts.length];
+    pushSegment(verts, a.x, a.y, b.x, b.y);
+  }
+  const lineGeo = geometry(verts);
+  const lineMat = new THREE.MeshBasicMaterial({
+    color: stroke,
+    transparent: true,
+    opacity: strokeOpacity,
+    depthTest: false,
+    depthWrite: false,
+  });
+  group.add(new THREE.Mesh(lineGeo, lineMat));
+  owned.push(lineGeo, lineMat);
+
+  return {
+    mesh: group,
+    dispose: () => {
+      for (const o of owned) o.dispose();
+    },
+  };
+}
+
+function roundedPolygon(points: Vec2[], radius: number): THREE.Shape {
+  const shape = new THREE.Shape();
+  const rounded = points.map((point, i) => {
+    const prev = points[(i + points.length - 1) % points.length];
+    const next = points[(i + 1) % points.length];
+    const a = offsetToward(point, prev, radius);
+    const b = offsetToward(point, next, radius);
+    return { point, a, b };
+  });
+
+  shape.moveTo(rounded[0].b[0], rounded[0].b[1]);
+  for (let i = 1; i <= rounded.length; i++) {
+    const corner = rounded[i % rounded.length];
+    shape.lineTo(corner.a[0], corner.a[1]);
+    shape.quadraticCurveTo(
+      corner.point[0],
+      corner.point[1],
+      corner.b[0],
+      corner.b[1],
+    );
+  }
+  return shape;
+}
+
+function offsetToward(from: Vec2, to: Vec2, distance: number): Vec2 {
+  const dx = to[0] - from[0];
+  const dy = to[1] - from[1];
+  const scale = Math.min(distance / Math.max(Math.hypot(dx, dy), 1e-6), 0.45);
+  return [from[0] + dx * scale, from[1] + dy * scale];
 }
 
 // ---- Color helpers ----------------------------------------------

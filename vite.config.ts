@@ -4,6 +4,10 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [graphDebugSeedPlugin()],
+  server: {
+    host: "127.0.0.1",
+    hmr: false,
+  },
   build: {
     outDir: process.env.PUBLISHED_BUILD === "1" ? "dist" : ".local-build",
     rollupOptions: {

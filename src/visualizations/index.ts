@@ -5,6 +5,14 @@ export type VisualizationLoader = () => Promise<VisualizationFactory>;
 export const visualizationLoaders: Record<string, VisualizationLoader> = {
   "attention-mask-pair": () =>
     import("./attentionMask").then((module) => module.createAttentionMask),
+  "attention-operation": () =>
+    import("./attentionOperation").then(
+      (module) => module.createAttentionOperation,
+    ),
+  "kv-cache-operation": () =>
+    import("./kvCacheOperation").then(
+      (module) => module.createKvCacheOperation,
+    ),
   "causal-attention-mask": () =>
     import("./attentionMask").then((module) => module.createAttentionMask),
   "windowed-attention-mask": () =>
@@ -19,9 +27,17 @@ export const visualizationLoaders: Record<string, VisualizationLoader> = {
     import("../lib/visualizations/transformer-block").then(
       (module) => module.createTransformerBlock,
     ),
+  "norm-order": () =>
+    import("../lib/visualizations/norm-order").then(
+      (module) => module.createNormOrder,
+    ),
   "mha-operation": () =>
     import("../lib/visualizations/mha-operation").then(
       (module) => module.createMhaOperation,
+    ),
+  "qk-norm-operation": () =>
+    import("../lib/visualizations/mha-operation").then(
+      (module) => module.createQkNormOperation,
     ),
   "mqa-operation": () =>
     import("../lib/visualizations/mha-operation").then(
@@ -30,5 +46,9 @@ export const visualizationLoaders: Record<string, VisualizationLoader> = {
   "gqa-operation": () =>
     import("../lib/visualizations/mha-operation").then(
       (module) => module.createGqaOperation,
+    ),
+  "mla-operation": () =>
+    import("../lib/visualizations/mha-operation").then(
+      (module) => module.createMlaOperation,
     ),
 };

@@ -53,7 +53,9 @@ function readNote(file: string): NoteDraft {
     connections: [],
     body: [],
     bodyHtml: "",
+    codeHtml: "",
     hasBody: false,
+    hasCode: false,
     searchText: "",
   };
 }

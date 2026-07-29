@@ -1,5 +1,9 @@
 import * as THREE from "three";
-import { createRenderer, fit, onMountResize } from "../core/renderer";
+import {
+  createRenderer,
+  fitComposition,
+  onMountResize,
+} from "../core/renderer";
 import { PALETTE, OPACITY } from "../core/palette";
 import {
   createLabelText,
@@ -21,8 +25,8 @@ const STREAM_X = 0;
 const STREAM_W = 0.05;
 
 const Y_TOKEN_IN = -1.26;
-const Y_INPROJ_BOTTOM = -1.04;
-const Y_INPROJ_TOP = -0.86;
+const Y_INPROJ_BOTTOM = -1.02;
+const Y_INPROJ_TOP = -0.88;
 
 const Y_ATTN_SPLIT = -0.78;
 const Y_ATTN_NORM = -0.57;
@@ -34,8 +38,8 @@ const Y_MLP_NORM = +0.43;
 const Y_MLP_BLOCK = +0.74;
 const Y_MLP_MERGE = +1.04;
 
-const Y_OUTPROJ_BOTTOM = +1.12;
-const Y_OUTPROJ_TOP = +1.3;
+const Y_OUTPROJ_BOTTOM = +1.14;
+const Y_OUTPROJ_TOP = +1.28;
 const Y_TOKEN_OUT = +1.5;
 
 const STREAM_Y_LOW = Y_TOKEN_IN + 0.04;
@@ -414,14 +418,7 @@ export const createTransformerBlock: VisualizationFactory = (canvas, mount) => {
   const fitCamera = () => {
     const r = mount.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return;
-    const aspect = r.width / r.height;
-    const halfW = VIEW_HALF_H * aspect;
-    camera.left = -halfW;
-    camera.right = halfW;
-    camera.top = VIEW_HALF_H;
-    camera.bottom = -VIEW_HALF_H;
-    camera.updateProjectionMatrix();
-    fit(renderer, canvas);
+    fitComposition(renderer, canvas, camera, VIEW_HALF_H);
   };
   fitCamera();
   const stopResize = onMountResize(mount, fitCamera);

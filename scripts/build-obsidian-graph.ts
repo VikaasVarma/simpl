@@ -6,10 +6,12 @@ import { parseNoteBody } from "./graph-build/parseConnections";
 import { indexNames, readVault } from "./graph-build/readVault";
 import {
   bodySearchText,
+  renderCodeBody,
   renderMarkdownBody,
   renderNoteBody,
 } from "./graph-build/renderHtml";
 import type { NoteDraft } from "./graph-build/types";
+import { validateTree } from "./graph-build/validateTree";
 
 const ROOT = process.cwd();
 const VAULT = path.resolve(ROOT, vaultPath());
@@ -27,7 +29,9 @@ for (const note of notes) {
   note.connections = parsed.connections;
   note.body = parsed.body;
   note.bodyHtml = renderNoteBody(note);
+  note.codeHtml = renderCodeBody(note);
   note.hasBody = note.bodyHtml.length > 0;
+  note.hasCode = note.codeHtml.length > 0;
   note.searchText = bodySearchText(note.body);
   note.connections = note.connections.map((group) => ({
     ...group,
@@ -63,6 +67,7 @@ function vaultPath(): string {
 
 function emitGraph(name: string, publishedOnly: boolean): void {
   const { nodes, graphLinks } = buildGraph(notes, { publishedOnly });
+  validateTree(nodes, graphLinks, name || "default");
   const emittedIds = new Set(nodes.map((node) => node.id));
   const nodeById = new Map(nodes.map((node) => [node.id, node]));
   const dir = name
@@ -72,6 +77,7 @@ function emitGraph(name: string, publishedOnly: boolean): void {
     root: ROOT,
     outPath: path.join(dir, "data.ts"),
     bodiesPath: path.join(dir, "bodies.ts"),
+    codeBodiesPath: path.join(dir, "codeBodies.ts"),
     bodies: Object.fromEntries(
       notes
         .filter((note) => emittedIds.has(note.id) && note.bodyHtml)
@@ -85,6 +91,11 @@ function emitGraph(name: string, publishedOnly: boolean): void {
             ),
           }),
         ]),
+    ),
+    codeBodies: Object.fromEntries(
+      notes
+        .filter((note) => emittedIds.has(note.id) && note.codeHtml)
+        .map((note) => [note.id, note.codeHtml]),
     ),
     nodes,
     graphLinks,

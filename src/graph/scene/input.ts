@@ -35,6 +35,11 @@ const DRAG_PX = 4;
 
 type DragState = { node: SimNode; offset: Point } | null;
 type PinchState = { center: Point; distance: number } | null;
+type SafariGestureEvent = Event & {
+  clientX: number;
+  clientY: number;
+  scale: number;
+};
 type PointerState = {
   id: number;
   startScreen: Point;
@@ -63,6 +68,7 @@ export function bindSceneInput(
   let drag: DragState = null;
   let pan: WorldPoint | null = null;
   let pinch: PinchState = null;
+  let safariGestureScale = 1;
   const activePointers = new Map<number, Point>();
 
   app.root.addEventListener("pointerdown", onPointerDown);
@@ -75,6 +81,22 @@ export function bindSceneInput(
   app.root.addEventListener("lostpointercapture", onPointerRelease);
   window.addEventListener("pointerup", onPointerRelease, true);
   window.addEventListener("pointercancel", onPointerRelease, true);
+  window.addEventListener("wheel", onBrowserZoomWheel, {
+    passive: false,
+    capture: true,
+  });
+  window.addEventListener("gesturestart", onSafariGestureStart, {
+    passive: false,
+    capture: true,
+  });
+  window.addEventListener("gesturechange", onSafariGestureChange, {
+    passive: false,
+    capture: true,
+  });
+  window.addEventListener("gestureend", onSafariGestureEnd, {
+    passive: false,
+    capture: true,
+  });
   app.root.addEventListener("wheel", onWheel, { passive: false });
   window.addEventListener("resize", () => resize(app, state, actions.redraw));
   bindHistory(state, actions, app);
@@ -109,10 +131,7 @@ export function bindSceneInput(
   function onPointerMove(event: PointerEvent): void {
     state.pointerScreen = localPoint(app.root, event.clientX, event.clientY);
     if (activePointers.has(event.pointerId)) {
-      activePointers.set(
-        event.pointerId,
-        state.pointerScreen,
-      );
+      activePointers.set(event.pointerId, state.pointerScreen);
     }
     if (pinch) {
       updatePinch(event);
@@ -126,7 +145,7 @@ export function bindSceneInput(
     if (pointer.id !== event.pointerId) return;
 
     const p = eventToWorld(event, app.renderer.domElement, app.camera);
-    if (pointer.mode === "pending" && moved(event, pointer)) {
+    if (pointer.mode === "pending" && moved(app.root, event, pointer)) {
       state.focusedNode = null;
       if (pointer.hit.kind === "dom-note") {
         pointer.mode = "pan";
@@ -214,10 +233,8 @@ export function bindSceneInput(
       profile.maxZoom,
     );
     zoomAtScreen(app.camera, next.center, app.renderer.domElement, targetZoom);
-    app.camera.position.x +=
-      (pinch.center.x - next.center.x) / app.camera.zoom;
-    app.camera.position.y -=
-      (pinch.center.y - next.center.y) / app.camera.zoom;
+    app.camera.position.x += (pinch.center.x - next.center.x) / app.camera.zoom;
+    app.camera.position.y -= (pinch.center.y - next.center.y) / app.camera.zoom;
     app.camera.updateMatrixWorld();
     pinch = next;
     if (state.focusedNode && app.camera.zoom <= profile.regimes.summary) {
@@ -247,6 +264,54 @@ export function bindSceneInput(
     zoomFromWheel(app, state, actions, event);
   }
 
+  function onBrowserZoomWheel(event: WheelEvent): void {
+    if (!event.ctrlKey || !eventInGraph(app.root, event)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    zoomFromWheel(app, state, actions, event);
+  }
+
+  function onSafariGestureStart(event: Event): void {
+    if (!eventInGraph(app.root, event)) return;
+    event.preventDefault();
+    safariGestureScale = 1;
+    state.cancelFocusAnimation?.();
+    state.cancelFocusAnimation = null;
+  }
+
+  function onSafariGestureChange(event: Event): void {
+    if (!eventInGraph(app.root, event)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const gesture = event as SafariGestureEvent;
+    const { width, height } = app.root.getBoundingClientRect();
+    const profile = cameraProfileForViewport(width, height);
+    const targetZoom = clamp(
+      app.camera.zoom * (gesture.scale / safariGestureScale),
+      profile.minZoom,
+      profile.maxZoom,
+    );
+    safariGestureScale = gesture.scale;
+    zoomAtScreen(
+      app.camera,
+      localPoint(app.root, gesture.clientX, gesture.clientY),
+      app.renderer.domElement,
+      targetZoom,
+    );
+    if (state.focusedNode && app.camera.zoom <= profile.regimes.summary) {
+      state.focusedNode = null;
+      history.replaceState(null, "", `${location.pathname}${location.search}`);
+    }
+    actions.redraw();
+  }
+
+  function onSafariGestureEnd(event: Event): void {
+    if (!eventInGraph(app.root, event)) return;
+    event.preventDefault();
+    safariGestureScale = 1;
+  }
+
   function onPointerLeave(): void {
     state.pointerScreen = null;
     if (state.hoveredFlowIds.size) {
@@ -262,7 +327,10 @@ export function bindSceneInput(
   }
 
   function onMouseLeave(event: MouseEvent): void {
-    if (event.relatedTarget instanceof Node && app.root.contains(event.relatedTarget))
+    if (
+      event.relatedTarget instanceof Node &&
+      app.root.contains(event.relatedTarget)
+    )
       return;
     onPointerLeave();
   }
@@ -294,6 +362,16 @@ function zoomFromWheel(
     history.replaceState(null, "", `${location.pathname}${location.search}`);
   }
   actions.redraw();
+}
+
+function eventInGraph(root: HTMLElement, event: Event): boolean {
+  if (event.target instanceof Node && root.contains(event.target)) return true;
+  if (!("clientX" in event) || !("clientY" in event)) return false;
+  const { left, right, top, bottom } = root.getBoundingClientRect();
+  const { clientX, clientY } = event as MouseEvent;
+  return (
+    clientX >= left && clientX <= right && clientY >= top && clientY <= bottom
+  );
 }
 
 function wheelTargetZoom(
@@ -346,13 +424,15 @@ export function resize(
 // -----------------------------------------------------------------------------
 
 function moved(
+  root: HTMLElement,
   event: PointerEvent,
   pointer: NonNullable<PointerState>,
 ): boolean {
+  const screen = localPoint(root, event.clientX, event.clientY);
   return (
     Math.hypot(
-      event.clientX - pointer.startScreen.x,
-      event.clientY - pointer.startScreen.y,
+      screen.x - pointer.startScreen.x,
+      screen.y - pointer.startScreen.y,
     ) > DRAG_PX
   );
 }

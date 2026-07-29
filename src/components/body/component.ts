@@ -8,23 +8,42 @@ import {
 
 const COPIED_RESET_MS = 1400;
 const bodies = new Map<string, string>();
+const codeBodies = new Map<string, string>();
+const scrollPositions = new Map<string, number>();
+
+export type BodyFace = "note" | "code";
 
 export type BodyComponent = {
   element: HTMLElement;
   inner: HTMLElement;
   sourceId: string;
+  face: BodyFace;
   hasContent: boolean;
+  hasCode: boolean;
 };
 
 export function createBodyComponent(): BodyComponent {
   const element = document.createElement("div");
   const inner = document.createElement("div");
+  const body = {
+    element,
+    inner,
+    sourceId: "",
+    face: "note" as BodyFace,
+    hasContent: false,
+    hasCode: false,
+  };
   element.className = "graph-dom-note__body";
   inner.className = "graph-dom-note__body-inner";
   element.append(inner);
-  element.addEventListener("scroll", () => updateBodyScrollFlags(element), {
-    passive: true,
-  });
+  element.addEventListener(
+    "scroll",
+    () => {
+      saveScroll(body);
+      updateBodyScrollFlags(element);
+    },
+    { passive: true },
+  );
   element.addEventListener("click", handleCodeBlockClick);
   element.addEventListener(
     "wheel",
@@ -38,22 +57,46 @@ export function createBodyComponent(): BodyComponent {
     },
     { passive: true },
   );
-  return { element, inner, sourceId: "", hasContent: false };
+  return body;
 }
 
 export function setBodyContent(body: BodyComponent, node: GraphNode): void {
   if (body.sourceId === node.id) return;
-  disposeVisualizations(body.inner);
+  saveScroll(body);
   body.sourceId = node.id;
-  body.hasContent = node.hasBody;
-  body.inner.innerHTML = "";
-  if (!node.hasBody) return;
+  body.face = "note";
+  body.hasCode = node.hasCode;
+  renderBodyFace(body, node);
+}
 
-  void loadBody(node.id).then((html) => {
-    if (body.sourceId !== node.id) return;
+export function setBodyFace(
+  body: BodyComponent,
+  node: GraphNode,
+  face: BodyFace,
+): void {
+  if (body.sourceId === node.id && body.face === face) return;
+  saveScroll(body);
+  body.sourceId = node.id;
+  body.face = face;
+  body.hasCode = node.hasCode;
+  renderBodyFace(body, node);
+}
+
+function renderBodyFace(body: BodyComponent, node: GraphNode): void {
+  disposeVisualizations(body.inner);
+  body.hasContent = body.face === "code" ? node.hasCode : node.hasBody;
+  body.inner.innerHTML = "";
+  if (!body.hasContent) return;
+
+  const face = body.face;
+  void loadBody(node.id, face).then((html) => {
+    if (body.sourceId !== node.id || body.face !== face) return;
     body.inner.innerHTML = html;
-    mountVisualizations(body.inner, isReader(body.element));
+    if (face === "note")
+      mountVisualizations(body.inner, isReader(body.element));
     requestAnimationFrame(() => {
+      body.element.scrollTop =
+        scrollPositions.get(scrollKey(node.id, face)) ?? 0;
       updateBodyScrollFlags(body.element);
       body.element.dispatchEvent(new CustomEvent("graph-body-load"));
     });
@@ -154,7 +197,20 @@ function isReader(body: HTMLElement): boolean {
   return body.dataset.reader === "true";
 }
 
-async function loadBody(id: string): Promise<string> {
+function saveScroll(body: BodyComponent): void {
+  if (body.sourceId)
+    scrollPositions.set(
+      scrollKey(body.sourceId, body.face),
+      body.element.scrollTop,
+    );
+}
+
+function scrollKey(id: string, face: BodyFace): string {
+  return `${graphMode()}:${id}:${face}`;
+}
+
+async function loadBody(id: string, face: BodyFace): Promise<string> {
+  if (face === "code") return loadCodeBody(id);
   const mode = graphMode();
   const key = `${mode}:${id}`;
   const cached = bodies.get(key);
@@ -167,5 +223,21 @@ async function loadBody(id: string): Promise<string> {
   const html = (graphBodies as Record<string, string>)[id];
   if (html === undefined) throw new Error(`Missing generated body for ${id}.`);
   bodies.set(key, html);
+  return html;
+}
+
+async function loadCodeBody(id: string): Promise<string> {
+  const mode = graphMode();
+  const key = `${mode}:${id}`;
+  const cached = codeBodies.get(key);
+  if (cached !== undefined) return cached;
+  const { graphCodeBodies } = !import.meta.env.DEV
+    ? await import("../../../generated/graph/codeBodies")
+    : mode === "official"
+      ? await import("../../../generated/graph/published/codeBodies")
+      : await import("../../../generated/graph/unofficial/codeBodies");
+  const html = (graphCodeBodies as Record<string, string>)[id];
+  if (html === undefined) throw new Error(`Missing generated code for ${id}.`);
+  codeBodies.set(key, html);
   return html;
 }

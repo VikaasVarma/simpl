@@ -119,7 +119,12 @@ function parseCodeOrViz(token: string): GraphBodyPart {
   const [kind, ...rest] = info.trim().split(/\s+/);
   return kind === "viz"
     ? { type: "viz", name: rest.join(" "), text: text.trim() }
-    : { type: "code", language: info.trim(), text: text.trim() };
+    : {
+        type: "code",
+        language: kind,
+        inline: rest.includes("--inline"),
+        text: text.trim(),
+      };
 }
 
 function wikilinkGroupPart(
@@ -168,7 +173,10 @@ function parseConnection(
   };
 }
 
-function parseDirectives(raw: string, note: NoteDraft): {
+function parseDirectives(
+  raw: string,
+  note: NoteDraft,
+): {
   label: string;
   icon?: string;
   ref: boolean;

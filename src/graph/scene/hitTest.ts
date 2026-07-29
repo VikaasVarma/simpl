@@ -79,6 +79,8 @@ function hitTestDom(root: HTMLElement, screen: Point): SceneHit | null {
   const link = element.closest("a[href]");
   if (link instanceof HTMLAnchorElement)
     return { kind: "link", href: link.href };
+  if (element.closest(".graph-search"))
+    return { kind: "hud" };
   if (element.closest("button, input, textarea, select"))
     return { kind: "hud" };
 

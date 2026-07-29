@@ -1,17 +1,22 @@
 import * as THREE from "three";
-import { createRenderer, fit, onMountResize } from "../core/renderer";
+import {
+  createRenderer,
+  fitComposition,
+  onMountResize,
+} from "../core/renderer";
 import { OPACITY, PALETTE } from "../core/palette";
 import {
   createBlock,
   createDisc,
   createLabelText,
   createStroke,
+  createTrapezoidBlock,
   type Primitive,
   type Vec2,
 } from "../core/primitives";
 import type { VisualizationFactory } from "../core/types";
 
-const VIEW_HALF_H = 1.38;
+const VIEW_HALF_H = 1.72;
 const CYCLE_MS = 9000;
 const HEAD_X = [-0.9, -0.3, 0.3, 0.9] as const;
 const GROUP_X = [-0.88, 0, 0.88] as const;
@@ -19,12 +24,17 @@ const GROUP_DX = [-0.3, -0.1, 0.1, 0.3] as const;
 const QKV = ["Q", "K", "V"] as const;
 const Y_INPUT = -1.06;
 const Y_SPLIT = -0.84;
+const Y_MLA_INPUT = -1.52;
+const Y_MLA_SPLIT = -1.26;
+const Y_MLA_KV = -1.02;
 const Y_QKV = -0.48;
+const Y_QK_NORM = -0.2;
 const Y_ATTN = 0.12;
 const Y_MERGE = 0.5;
 const Y_CONCAT = 0.74;
 const Y_O = 1.08;
 const Y_OUTPUT = 1.28;
+const QK_NORM_SHIFT = 0.34;
 const TOKEN_R = 0.03;
 const DOT_R = 0.02;
 const HIDE_DOT = DOT_R * 1.2;
@@ -46,6 +56,7 @@ const BLOCK = {
 };
 const ATTN = { w: 0.52, h: 0.2 };
 const WIDE = { w: 0.54, h: 0.18 };
+const NORM = { w: 0.13, h: 0.12 };
 const COLORS = {
   input: PALETTE.INK_MUTED,
   q: PALETTE.SIGNAL.BLUE,
@@ -53,28 +64,50 @@ const COLORS = {
   v: PALETTE.SIGNAL.VIOLET,
   head: PALETTE.SIGNAL.AMBER,
   out: PALETTE.SIGNAL.GREEN,
+  norm: PALETTE.ACCENT,
+  kv: 0xb6d8d3,
 };
 
 type Projection = {
   input: Vec2[];
   attention: Vec2[];
   color: number;
+  inputColorAt?: (t: number) => number;
 };
 
 type SignalPath = {
   path: Vec2[];
   color: number;
+  colorAt?: (t: number) => number;
 };
 
 type SignalRoute = [SignalPath, SignalPath, SignalPath, SignalPath];
 
 type AttentionVariant = {
   kvGroups: 1 | 2 | 4;
+  qkNorm?: boolean;
+  mla?: boolean;
+};
+
+type YPositions = {
+  attention: number;
+  merge: number;
+  concat: number;
+  o: number;
+  output: number;
 };
 
 export const createMhaOperation = createAttentionOperation({ kvGroups: 4 });
+export const createQkNormOperation = createAttentionOperation({
+  kvGroups: 4,
+  qkNorm: true,
+});
 export const createMqaOperation = createAttentionOperation({ kvGroups: 1 });
 export const createGqaOperation = createAttentionOperation({ kvGroups: 2 });
+export const createMlaOperation = createAttentionOperation({
+  kvGroups: 4,
+  mla: true,
+});
 
 function createAttentionOperation(
   variant: AttentionVariant,
@@ -120,30 +153,53 @@ function createAttentionOperation(
         true,
       );
     };
+    const trapezoid = (
+      label: string,
+      x: number,
+      y: number,
+      point: "up" | "down",
+      fill: number,
+      w = BLOCK.w,
+      h = BLOCK.h,
+    ) => {
+      add(
+        createTrapezoidBlock(x, y, w, h, point, {
+          stroke: PALETTE.INK_SOFT,
+          fill,
+          strokeOpacity: OPACITY.STROKE,
+          fillOpacity: BLOCK.opacity,
+          radius: BLOCK.radius * 0.8,
+        }),
+        Z_BLOCK,
+        true,
+      );
+      add(createLabelText(label, x, y, 0.062), Z_TEXT, true);
+    };
 
     const sources = HEAD_X.flatMap((headX, head) =>
       QKV.map((label, lane) => ({
         label,
         lane,
         head,
-        x: sourceX(lane, head, variant.kvGroups),
+        x: sourceX(lane, head, variant),
         color: qkvColor(lane),
         surface: qkvSurface(lane),
-        blockKey: `${label}-${sourceGroup(lane, head, variant.kvGroups)}`,
+        blockKey: blockKey(label, lane, head, variant),
         targetX: attentionEntryX(headX, lane),
       })),
     );
-    const projections = sources.map(({ x, head, color, targetX }) =>
-      projection(x, targetX, head, color),
+    const y = yPositions(variant);
+    const projections = sources.map(({ x, head, lane, color, targetX }) =>
+      projection(x, targetX, head, lane, color, variant, y),
     );
     const heads = HEAD_X.map((x) => ({
-      path: roundPath(headPath(x)),
+      path: roundPath(headPath(x, y)),
       color: COLORS.head,
     }));
     const output = roundPath([
-      [0, blockTopExit(Y_CONCAT, WIDE.h)],
-      ...passUpThroughBlock(0, Y_O, BLOCK.h),
-      [0, Y_OUTPUT - TOKEN_R],
+      [0, blockTopExit(y.concat, WIDE.h)],
+      ...passUpThroughBlock(0, y.o, BLOCK.h),
+      [0, y.output - TOKEN_R],
     ] satisfies Vec2[]);
 
     for (const { input, attention } of projections) {
@@ -154,18 +210,39 @@ function createAttentionOperation(
     line(output);
 
     const drawnBlocks = new Set<string>();
-    sources.forEach(({ label, x, surface, blockKey }) => {
+    sources.forEach(({ label, lane, head, x, surface, blockKey }) => {
       if (drawnBlocks.has(blockKey)) return;
       drawnBlocks.add(blockKey);
+      if (variant.mla && lane > 0) {
+        if (lane === 1) {
+          trapezoid("KV↓", mlaKvX(head), Y_MLA_KV, "up", COLORS.kv);
+        }
+        trapezoid(`${label}↑`, x, Y_QKV, "down", qkvSurface(lane));
+        return;
+      }
       block(label, x, Y_QKV, surface, BLOCK.w, BLOCK.h);
     });
+    if (variant.qkNorm) {
+      sources.forEach(({ lane, x, blockKey }) => {
+        if (lane > 1 || drawnBlocks.has(`norm-${blockKey}`)) return;
+        drawnBlocks.add(`norm-${blockKey}`);
+        block("^", x, Y_QK_NORM, COLORS.norm, NORM.w, NORM.h);
+      });
+    }
     HEAD_X.forEach((headX) => {
-      block("attention", headX, Y_ATTN, PALETTE.SURFACE.PEACH, ATTN.w, ATTN.h);
+      block(
+        "attention",
+        headX,
+        y.attention,
+        PALETTE.SURFACE.PEACH,
+        ATTN.w,
+        ATTN.h,
+      );
     });
-    block("||", 0, Y_CONCAT, PALETTE.SURFACE.STONE, WIDE.w, WIDE.h);
-    block("O", 0, Y_O, PALETTE.SURFACE.SAGE, BLOCK.w, BLOCK.h);
+    block("||", 0, y.concat, PALETTE.SURFACE.STONE, WIDE.w, WIDE.h);
+    block("O", 0, y.o, PALETTE.SURFACE.SAGE, BLOCK.w, BLOCK.h);
     add(
-      createDisc(0, Y_INPUT, TOKEN_R, {
+      createDisc(0, inputY(variant), TOKEN_R, {
         color: PALETTE.INK_SOFT,
         opacity: 0.82,
       }),
@@ -173,7 +250,7 @@ function createAttentionOperation(
       true,
     );
     add(
-      createDisc(0, Y_OUTPUT, TOKEN_R, {
+      createDisc(0, y.output, TOKEN_R, {
         color: PALETTE.INK_SOFT,
         opacity: 0.82,
       }),
@@ -189,13 +266,7 @@ function createAttentionOperation(
     const resize = () => {
       const { width, height } = mount.getBoundingClientRect();
       if (!width || !height) return;
-      const aspect = width / height;
-      camera.left = -VIEW_HALF_H * aspect;
-      camera.right = VIEW_HALF_H * aspect;
-      camera.top = VIEW_HALF_H;
-      camera.bottom = -VIEW_HALF_H;
-      camera.updateProjectionMatrix();
-      fit(renderer, canvas);
+      fitComposition(renderer, canvas, camera, variant.mla ? 1.9 : VIEW_HALF_H);
     };
     resize();
     const stopResize = onMountResize(mount, resize);
@@ -252,37 +323,129 @@ function projection(
   x: number,
   attnX: number,
   head: number,
+  lane: number,
   color: number,
+  variant: AttentionVariant,
+  y: YPositions,
 ): Projection {
   const branchY = lerp(
-    Y_QKV + BLOCK.h / 2 + 0.09,
-    Y_ATTN - ATTN.h / 2 - 0.07,
+    Y_QKV + BLOCK.h / 2 + 0.09 + (variant.qkNorm ? QK_NORM_SHIFT : 0),
+    y.attention - ATTN.h / 2 - 0.07,
     head / (HEAD_X.length - 1),
   );
+  const qkNormPath =
+    variant.qkNorm && lane < 2 ? passUpThroughBlock(x, Y_QK_NORM, NORM.h) : [];
+  const sourceX = variant.mla && lane > 0 ? mlaKvX(head) : x;
+  const sourceY = variant.mla && lane > 0 ? Y_MLA_KV : Y_QKV;
+  const mlaInputPath = variant.mla && lane > 0 ? mlaUpPath(x, head) : [];
+  const input = roundPath([
+    [0, inputY(variant) + TOKEN_R],
+    [0, splitY(variant)],
+    [sourceX, splitY(variant)],
+    ...passUpThroughBlock(sourceX, sourceY, BLOCK.h),
+    ...mlaInputPath,
+  ]);
   return {
     color,
-    input: roundPath([
-      [0, Y_INPUT + TOKEN_R],
-      [0, Y_SPLIT],
-      [x, Y_SPLIT],
-      ...passUpThroughBlock(x, Y_QKV, BLOCK.h),
-    ]),
+    input,
+    inputColorAt:
+      variant.mla && lane > 0
+        ? (t) => mlaInputColorAt(input, t, lane)
+        : undefined,
     attention: roundPath([
       [x, blockTopExit(Y_QKV, BLOCK.h)],
+      ...qkNormPath,
       [x, branchY],
       [attnX, branchY],
-      [attnX, blockBottomEntry(Y_ATTN, ATTN.h)],
+      [attnX, blockBottomEntry(y.attention, ATTN.h)],
     ]),
   };
+}
+
+function yPositions(variant: AttentionVariant): YPositions {
+  const shift = variant.qkNorm ? QK_NORM_SHIFT : 0;
+  return {
+    attention: Y_ATTN + shift,
+    merge: Y_MERGE + shift,
+    concat: Y_CONCAT + shift,
+    o: Y_O + shift,
+    output: Y_OUTPUT + shift,
+  };
+}
+
+function inputY(variant: AttentionVariant): number {
+  return variant.mla ? Y_MLA_INPUT : Y_INPUT;
+}
+
+function splitY(variant: AttentionVariant): number {
+  return variant.mla ? Y_MLA_SPLIT : Y_SPLIT;
 }
 
 function sourceX(
   lane: number,
   head: number,
-  kvGroups: AttentionVariant["kvGroups"],
+  variant: AttentionVariant,
 ): number {
+  const kvGroups = variant.kvGroups;
   const groups = lane === 0 ? HEAD_X.length : kvGroups;
   return GROUP_X[lane] + groupCenter(sourceGroup(lane, head, kvGroups), groups);
+}
+
+function mlaKvX(head: number): number {
+  const left = GROUP_X[1] + GROUP_DX[0];
+  const right = GROUP_X[2] + GROUP_DX[GROUP_DX.length - 1];
+  return lerp(left, right, head / (HEAD_X.length - 1));
+}
+
+function mlaUpPath(x: number, head: number): Vec2[] {
+  const kvX = mlaKvX(head);
+  const branchY = lerp(
+    blockTopExit(Y_MLA_KV, BLOCK.h) + 0.06,
+    blockBottomEntry(Y_QKV, BLOCK.h) - 0.06,
+    head / (HEAD_X.length - 1),
+  );
+  return [
+    [kvX, blockTopExit(Y_MLA_KV, BLOCK.h)],
+    [kvX, branchY],
+    [x, branchY],
+    ...passUpThroughBlock(x, Y_QKV, BLOCK.h),
+  ];
+}
+
+function mlaInputColorAt(
+  path: readonly Vec2[],
+  t: number,
+  lane: number,
+): number {
+  const y = samplePath(path, t)[1];
+  const target = lane === 1 ? COLORS.k : COLORS.v;
+  const u =
+    (y - blockBottomEntry(Y_MLA_KV, BLOCK.h)) /
+    (blockTopExit(Y_MLA_KV, BLOCK.h) - blockBottomEntry(Y_MLA_KV, BLOCK.h));
+  return blendHex(COLORS.input, target, Math.max(0, Math.min(1, u)));
+}
+
+function blendHex(a: number, b: number, t: number): number {
+  const ar = (a >> 16) & 0xff;
+  const ag = (a >> 8) & 0xff;
+  const ab = a & 0xff;
+  const br = (b >> 16) & 0xff;
+  const bg = (b >> 8) & 0xff;
+  const bb = b & 0xff;
+  return (
+    (Math.round(lerp(ar, br, t)) << 16) |
+    (Math.round(lerp(ag, bg, t)) << 8) |
+    Math.round(lerp(ab, bb, t))
+  );
+}
+
+function blockKey(
+  label: string,
+  lane: number,
+  head: number,
+  variant: AttentionVariant,
+): string {
+  return `${label}-${sourceGroup(lane, head, variant.kvGroups)}`;
 }
 
 function sourceGroup(
@@ -290,7 +453,9 @@ function sourceGroup(
   head: number,
   kvGroups: AttentionVariant["kvGroups"],
 ): number {
-  return Math.floor((head * (lane === 0 ? HEAD_X.length : kvGroups)) / HEAD_X.length);
+  return Math.floor(
+    (head * (lane === 0 ? HEAD_X.length : kvGroups)) / HEAD_X.length,
+  );
 }
 
 function groupCenter(group: number, groups: number): number {
@@ -303,12 +468,12 @@ function attentionEntryX(headX: number, lane: number): number {
   return headX - ATTN.w / 2 + ((lane + 1) * ATTN.w) / (QKV.length + 1);
 }
 
-function headPath(x: number): Vec2[] {
+function headPath(x: number, y: YPositions): Vec2[] {
   return [
-    [x, blockTopExit(Y_ATTN, ATTN.h)],
-    [x, Y_MERGE],
-    [0, Y_MERGE],
-    [0, blockBottomEntry(Y_CONCAT, WIDE.h)],
+    [x, blockTopExit(y.attention, ATTN.h)],
+    [x, y.merge],
+    [0, y.merge],
+    [0, blockBottomEntry(y.concat, WIDE.h)],
   ];
 }
 
@@ -354,7 +519,7 @@ function createSignals(
   const group = new THREE.Group();
   const geo = new THREE.CircleGeometry(DOT_R, 24);
   const routes = projections.map((p, i) => [
-    { path: p.input, color: COLORS.input },
+    { path: p.input, color: COLORS.input, colorAt: p.inputColorAt },
     { path: p.attention, color: p.color },
     heads[Math.floor(i / QKV.length)],
     output,
@@ -397,7 +562,8 @@ function placeOnRoute(
 ): void {
   const section = sectionIndex(t);
   const { path, color } = route[section];
-  place(dot, path, sectionProgress(t), color);
+  const u = sectionProgress(t);
+  place(dot, path, u, route[section].colorAt?.(u) ?? color);
 }
 
 function place(

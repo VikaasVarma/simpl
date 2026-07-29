@@ -3,11 +3,13 @@ import type { GraphNode } from "../graph/graphTypes";
 import {
   createBodyComponent,
   setBodyContent,
+  setBodyFace,
   setBodyProgress,
   type BodyComponent,
 } from "./body/index";
 import {
   createLinkComponent,
+  setCodeToggle,
   setLinkContent,
   setLinkVisible,
   type LinkComponent,
@@ -52,6 +54,12 @@ export function setNoteContent(
 
 export function setNoteBody(note: NoteComponent, node: GraphNode): void {
   setBodyContent(note.body, node);
+  const toggleCode = () => {
+    const face = note.body.face === "code" ? "note" : "code";
+    setBodyFace(note.body, node, face);
+    setCodeToggle(note.link, node.hasCode, face === "code", toggleCode);
+  };
+  setCodeToggle(note.link, node.hasCode, note.body.face === "code", toggleCode);
 }
 
 export function setNoteStyle(
