@@ -217,7 +217,7 @@ function codeBlock(value: string, language = ""): string {
 
 function codeToolbar(hasDiff: boolean): string {
   const toggle = hasDiff
-    ? '<button class="code-mode-btn" type="button" data-code-mode-toggle>code</button>'
+    ? '<button class="code-mode-btn" type="button" data-code-mode-toggle>diff</button>'
     : "";
   return `<div class="code-block-toolbar">${toggle}<button class="code-copy-btn" type="button">copy</button></div>`;
 }

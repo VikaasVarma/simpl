@@ -488,7 +488,7 @@ function activateHighlight(
   if (!source || !group) return;
 
   const target = group.connections[0];
-  if (group.connections.length === 1 && target && !target.label) {
+  if (group.connections.length === 1 && target && !target.labelHtml) {
     closePopups(app, state);
     focusById(target.target);
     return;

@@ -147,7 +147,7 @@ function setCodeMode(button: HTMLButtonElement): void {
   if (!wrap) return;
   const mode = wrap.dataset.codeMode === "diff" ? "code" : "diff";
   wrap.dataset.codeMode = mode;
-  button.textContent = mode;
+  button.textContent = mode === "diff" ? "code" : "diff";
 }
 
 function copied(button: HTMLButtonElement, label: string): void {

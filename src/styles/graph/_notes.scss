@@ -104,6 +104,11 @@
   display: none;
 }
 
+.graph-dom-note__link a[hidden],
+.graph-dom-note__code-toggle[hidden] {
+  display: none;
+}
+
 .graph-dom-note__link a,
 .graph-dom-note__code-toggle {
   display: inline-flex;

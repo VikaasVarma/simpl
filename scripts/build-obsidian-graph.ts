@@ -43,7 +43,7 @@ for (const note of notes) {
 }
 
 if (EMIT_ALL) {
-  emitGraph("unofficial", false);
+  if (!PUBLISHED_ONLY) emitGraph("unofficial", false);
   emitGraph("published", true);
 }
 emitGraph("", PUBLISHED_ONLY);

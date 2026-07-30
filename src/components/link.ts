@@ -63,6 +63,7 @@ export function setCodeToggle(
   link.code.hidden = !hasCode;
   link.code.textContent = active ? "note" : "</code>";
   link.code.setAttribute("aria-pressed", String(active));
+  if (!link.hasHref && !hasCode) link.element.hidden = true;
 }
 
 export function setLinkVisible(link: LinkComponent, visible: boolean): void {

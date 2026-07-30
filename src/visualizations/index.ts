@@ -35,6 +35,18 @@ export const visualizationLoaders: Record<string, VisualizationLoader> = {
     import("../lib/visualizations/mha-operation").then(
       (module) => module.createMhaOperation,
     ),
+  "mlp-operation": () =>
+    import("../lib/visualizations/mlp-operation").then(
+      (module) => module.createMlpOperation,
+    ),
+  "gated-mlp-operation": () =>
+    import("../lib/visualizations/gated-mlp-operation").then(
+      (module) => module.createGatedMlpOperation,
+    ),
+  "embedding-operation": () =>
+    import("../lib/visualizations/embedding-operation").then(
+      (module) => module.createEmbeddingOperation,
+    ),
   "qk-norm-operation": () =>
     import("../lib/visualizations/mha-operation").then(
       (module) => module.createQkNormOperation,

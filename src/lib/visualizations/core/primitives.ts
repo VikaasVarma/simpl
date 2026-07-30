@@ -262,7 +262,7 @@ export function createTrapezoidBlock(
   cy: number,
   width: number,
   height: number,
-  point: "up" | "down",
+  point: "up" | "down" | "left" | "right",
   opts: BlockOptions = {},
 ): Primitive {
   const stroke = opts.stroke ?? PALETTE.INK_SOFT;
@@ -272,16 +272,26 @@ export function createTrapezoidBlock(
   const r = opts.radius ?? Math.min(width, height) * 0.12;
   const w = width / 2;
   const h = height / 2;
-  const narrow = w * 0.48;
-  const top = point === "up" ? narrow : w;
-  const bottom = point === "up" ? w : narrow;
+  const narrowX = w * 0.48;
+  const narrowY = h * 0.48;
+  const top = point === "up" ? narrowX : w;
+  const bottom = point === "down" ? narrowX : w;
+  const left = point === "left" ? narrowY : h;
+  const right = point === "right" ? narrowY : h;
   const shape = roundedPolygon(
-    [
-      [cx - top, cy + h],
-      [cx + top, cy + h],
-      [cx + bottom, cy - h],
-      [cx - bottom, cy - h],
-    ],
+    point === "left" || point === "right"
+      ? [
+          [cx - w, cy + left],
+          [cx + w, cy + right],
+          [cx + w, cy - right],
+          [cx - w, cy - left],
+        ]
+      : [
+          [cx - top, cy + h],
+          [cx + top, cy + h],
+          [cx + bottom, cy - h],
+          [cx - bottom, cy - h],
+        ],
     r,
   );
 
@@ -567,6 +577,7 @@ export function createPlusMarker(
 
 export type FlowOptions = {
   color?: number;
+  colorStops?: Array<{ at: number; color: number }>;
   colorStages?: Array<{
     yMin: number;
     yMax: number;
@@ -590,6 +601,7 @@ export function createPathFlow(
   opts: FlowOptions = {},
 ): Primitive {
   const color = opts.color ?? PALETTE.INK;
+  const colorStops = opts.colorStops ?? [];
   const colorStages = opts.colorStages ?? [];
   const colorZones = opts.colorZones ?? [];
   const opacity = opts.opacity ?? OPACITY.PARTICLE;
@@ -637,17 +649,42 @@ export function createPathFlow(
       const u = (base + i / particleCount) % 1;
       const [x, y] = sampleAt(u);
       particles.meshes[i].position.set(x, y, 0);
-      if (colorStages.length > 0 || colorZones.length > 0) {
+      if (
+        colorStops.length > 0 ||
+        colorStages.length > 0 ||
+        colorZones.length > 0
+      ) {
         const [r, g, b] =
-          colorStages.length > 0
-            ? colorAtStages(color, colorStages, y)
-            : colorAtY(color, colorZones, y);
+          colorStops.length > 0
+            ? colorAtStops(color, colorStops, u)
+            : colorStages.length > 0
+              ? colorAtStages(color, colorStages, y)
+              : colorAtY(color, colorZones, y);
         particles.mats[i].color.setRGB(r, g, b);
       }
     }
   }
 
   return { mesh: particles.group, tick, dispose: particles.dispose };
+}
+
+function colorAtStops(
+  baseColor: number,
+  stops: NonNullable<FlowOptions["colorStops"]>,
+  u: number,
+): [number, number, number] {
+  let previous = { at: 0, color: baseColor };
+  for (const stop of [...stops].sort((a, b) => a.at - b.at)) {
+    if (u <= stop.at) {
+      return lerpColorHex(
+        previous.color,
+        stop.color,
+        (u - previous.at) / Math.max(stop.at - previous.at, 1e-4),
+      );
+    }
+    previous = stop;
+  }
+  return lerpColorHex(previous.color, previous.color, 0);
 }
 
 function colorAtStages(

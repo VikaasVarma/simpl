@@ -14,6 +14,14 @@
   aspect-ratio: 1 / 1;
 }
 
+.graph-dom-note__body .viz-mount[data-viz="mlp-operation"] {
+  aspect-ratio: 5 / 1;
+}
+
+.graph-dom-note__body .viz-mount[data-viz="gated-mlp-operation"] {
+  aspect-ratio: 3.6 / 1;
+}
+
 .graph-dom-note__body .viz-caption {
   max-width: min(var(--note-reading-col), 100%);
   margin: 0.35em auto 0;
