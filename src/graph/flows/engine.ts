@@ -9,7 +9,9 @@ import type { FlowEndpoint, FlowInput, FlowLayout } from "./types";
 
 const ENDPOINT_GAP_PX = FLOW.anchorGap;
 const SPREAD_PASSES = 4;
+const SORT_EPS = 1e-6;
 type EndpointSlot = {
+  flowId: string;
   endpoint: FlowEndpoint;
 };
 
@@ -62,15 +64,15 @@ function spreadEndpoints(
   for (let pass = 0; pass < passes; pass++) {
     const endpointGroups = new Map<string, EndpointSlot[]>();
     flows.forEach((flow) => {
-      addEndpoint(endpointGroups, flow.source);
-      addEndpoint(endpointGroups, flow.target);
+      addEndpoint(endpointGroups, flow.id, flow.source);
+      addEndpoint(endpointGroups, flow.id, flow.target);
     });
 
     let moved = false;
     for (const endpoints of endpointGroups.values()) {
       if (endpoints.length <= 1) continue;
 
-      const sorted = [...endpoints].sort((a, b) => edgeValue(a) - edgeValue(b));
+      const sorted = [...endpoints].sort(compareEndpointSlots);
 
       const N = sorted.length;
       for (let i = 1; i < N; i++) {
@@ -82,16 +84,16 @@ function spreadEndpoints(
         }
       }
 
-      const first = sorted[0].endpoint;
-      const last = sorted[N - 1].endpoint;
+      const first = sorted[0];
+      const last = sorted[N - 1];
       const overflow =
-        edgeValue({ endpoint: last }) -
-        edgeMax(last) +
-        Math.max(0, edgeMin(first) - edgeValue({ endpoint: first }));
+        edgeValue(last) -
+        edgeMax(last.endpoint) +
+        Math.max(0, edgeMin(first.endpoint) - edgeValue(first));
       if (overflow > 0) {
         const shift = overflow / 2;
-        sorted.forEach(({ endpoint }) =>
-          setEdgeValue(endpoint, edgeValue({ endpoint }) - shift),
+        sorted.forEach((slot) =>
+          setEdgeValue(slot.endpoint, edgeValue(slot) - shift),
         );
       }
     }
@@ -103,12 +105,18 @@ function spreadEndpoints(
 
 function addEndpoint(
   endpointGroups: Map<string, EndpointSlot[]>,
+  flowId: string,
   endpoint: FlowEndpoint,
 ): void {
   const groupKey = `${endpoint.id}:${endpoint.normal.x}:${endpoint.normal.y}`;
   const group = endpointGroups.get(groupKey);
-  if (group) group.push({ endpoint });
-  else endpointGroups.set(groupKey, [{ endpoint }]);
+  if (group) group.push({ flowId, endpoint });
+  else endpointGroups.set(groupKey, [{ flowId, endpoint }]);
+}
+
+function compareEndpointSlots(a: EndpointSlot, b: EndpointSlot): number {
+  const d = edgeValue(a) - edgeValue(b);
+  return Math.abs(d) > SORT_EPS ? d : a.flowId.localeCompare(b.flowId);
 }
 
 function edgeValue(slot: EndpointSlot): number {
