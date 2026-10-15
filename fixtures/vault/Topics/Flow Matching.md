@@ -11,7 +11,7 @@ $$
 \frac{d}{dt}\phi_t(x) = v_t(\phi_t(x))
 $$
 
-The same idea points back to [[The Notes|the note format]].
+The same idea points back to [[The Notes|the note format]]%%ref%%.
 
 ```viz flow-matching
 Flow matching crescent moon visualization.

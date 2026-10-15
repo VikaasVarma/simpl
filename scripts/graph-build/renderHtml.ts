@@ -76,7 +76,7 @@ export function renderNoteBody(note: NoteDraft): string {
       return blockToken(tokens, { type: "viz", part });
     })
     .join("");
-  return renderMarkdown(source, tokens);
+  return renderMarkdown(source, tokens, note.id);
 }
 
 export function renderCodeBody(note: NoteDraft): string {
@@ -105,10 +105,14 @@ export function bodySearchText(parts: readonly GraphBodyPart[]): string {
     .join(" ");
 }
 
-function renderMarkdown(value: string, tokens: readonly RenderToken[]): string {
+function renderMarkdown(
+  value: string,
+  tokens: readonly RenderToken[],
+  docId?: string,
+): string {
   const text = value.trim();
   if (!text) return "";
-  return restoreTokens(markdown.render(text), tokens);
+  return restoreTokens(markdown.render(text, { docId }), tokens);
 }
 
 function renderMarkdownInline(value: string): string {

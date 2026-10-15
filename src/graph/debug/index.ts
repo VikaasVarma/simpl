@@ -148,8 +148,7 @@ function switchGraphMode(): void {
 
 function setGraphMode(mode: ReturnType<typeof graphMode>): void {
   const url = new URL(location.href);
-  if (mode === "official") url.searchParams.delete("graph");
-  else url.searchParams.set("graph", mode);
+  url.searchParams.set("graph", mode);
   location.href = url.toString();
 }
 

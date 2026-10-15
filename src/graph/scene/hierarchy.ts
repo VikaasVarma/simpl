@@ -1,6 +1,6 @@
 import { GraphTag } from "../graphTypes";
 import type { SimNode } from "../simulation";
-import type { GraphSceneApp, SceneState } from "./types";
+import type { GraphSceneApp } from "./types";
 
 export function hierarchyPath(
   app: GraphSceneApp,
@@ -41,13 +41,3 @@ export function hierarchyPath(
   return path.reverse();
 }
 
-export function focusParent(
-  app: GraphSceneApp,
-  state: SceneState,
-  focusById: (id?: string | null) => boolean,
-): boolean {
-  if (!state.focusedNode) return false;
-  const path = hierarchyPath(app, state.focusedNode);
-  if (path.length < 2) return false;
-  return focusById(path[path.length - 2]);
-}

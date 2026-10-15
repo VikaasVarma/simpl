@@ -9,7 +9,7 @@ Welcome to the fixture graph.
 
 This public repo ships with sample notes so the site can build without a private
 vault. Start with [[The Notes|the notes]]%%This popup shows how connection labels work.%%
-or jump straight to [[Flow Matching|flow matching]].
+or jump straight to [[Flow Matching|flow matching]]%%ref%%.
 
 Social-style icon links are just hidden notes with `link` metadata:
 

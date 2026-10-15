@@ -52,7 +52,6 @@ export type SceneInputActions = {
   redraw: () => void;
   focusOn: (node: SimNode, options?: FocusOptions) => void;
   focusById: (id?: string | null, options?: FocusOptions) => boolean;
-  focusParent: () => boolean;
 };
 
 // -----------------------------------------------------------------------------
@@ -69,6 +68,7 @@ export function bindSceneInput(
   let pan: WorldPoint | null = null;
   let pinch: PinchState = null;
   let safariGestureScale = 1;
+  let hoverPopupKey: string | null = null;
   const activePointers = new Map<number, Point>();
 
   app.root.addEventListener("pointerdown", onPointerDown);
@@ -139,7 +139,14 @@ export function bindSceneInput(
     }
 
     if (!pointer) {
-      updateHover(app, state, actions.redraw, event);
+      hoverPopupKey = updateHover(
+        app,
+        state,
+        hoverPopupKey,
+        actions.redraw,
+        actions.focusById,
+        event,
+      );
       return;
     }
     if (pointer.id !== event.pointerId) return;
@@ -314,6 +321,10 @@ export function bindSceneInput(
 
   function onPointerLeave(): void {
     state.pointerScreen = null;
+    if (hoverPopupKey) {
+      hoverPopupKey = null;
+      closePopups(app, state, actions.redraw);
+    }
     if (state.hoveredFlowIds.size) {
       state.hoveredFlowIds = new Set();
       actions.redraw();
@@ -323,7 +334,14 @@ export function bindSceneInput(
   function onMouseHover(event: MouseEvent): void {
     if (pointer || pinch) return;
     state.pointerScreen = localPoint(app.root, event.clientX, event.clientY);
-    updateHover(app, state, actions.redraw, event);
+    hoverPopupKey = updateHover(
+      app,
+      state,
+      hoverPopupKey,
+      actions.redraw,
+      actions.focusById,
+      event,
+    );
   }
 
   function onMouseLeave(event: MouseEvent): void {
@@ -444,9 +462,11 @@ function moved(
 function updateHover(
   app: GraphSceneApp,
   state: SceneState,
+  currentPopupKey: string | null,
   redraw: () => void,
+  focusById: (id?: string | null) => boolean,
   event: PointerEvent | MouseEvent,
-): void {
+): string | null {
   const screen = localPoint(app.root, event.clientX, event.clientY);
   const hit = hitTestScene(
     app,
@@ -455,11 +475,37 @@ function updateHover(
     eventToWorld(event, app.renderer.domElement, app.camera),
   );
   const hoveredFlowIds = flowIdsForHit(app, hit);
+  let nextPopupKey = currentPopupKey;
+
+  if (hit.kind === "highlight") {
+    const key = `${hit.sourceId}:${hit.groupId}`;
+    if (key !== currentPopupKey) {
+      activateHighlight(app, state, focusById, redraw, hit, "hover");
+    }
+    nextPopupKey = hasHighlightPopup(app, hit) ? key : null;
+    if (!nextPopupKey && currentPopupKey) closePopups(app, state, redraw);
+  } else if (hit.kind !== "popup" && currentPopupKey) {
+    nextPopupKey = null;
+    closePopups(app, state, redraw);
+  }
 
   if (!sameIds(state.hoveredFlowIds, hoveredFlowIds)) {
     state.hoveredFlowIds = hoveredFlowIds;
     redraw();
   }
+  return nextPopupKey;
+}
+
+function hasHighlightPopup(
+  app: GraphSceneApp,
+  hit: Extract<SceneHit, { kind: "highlight" }>,
+): boolean {
+  return Boolean(
+    app.nodeById
+      .get(hit.sourceId)
+      ?.connections.find((item) => item.id === hit.groupId)
+      ?.connections.some((item) => item.labelHtml),
+  );
 }
 
 // -----------------------------------------------------------------------------
@@ -482,13 +528,21 @@ function activateHighlight(
   focusById: (id?: string | null) => boolean,
   redraw: () => void,
   hit: Extract<SceneHit, { kind: "highlight" }>,
+  mode: "click" | "hover" = "click",
 ): void {
   const source = app.nodeById.get(hit.sourceId);
   const group = source?.connections.find((item) => item.id === hit.groupId);
   if (!source || !group) return;
 
   const target = group.connections[0];
-  if (group.connections.length === 1 && target && !target.labelHtml) {
+  if (mode === "hover" && !group.connections.some((item) => item.labelHtml))
+    return;
+  if (
+    mode === "click" &&
+    group.connections.length === 1 &&
+    target &&
+    !target.labelHtml
+  ) {
     closePopups(app, state);
     focusById(target.target);
     return;
@@ -562,13 +616,19 @@ function bindHistory(
     } else actions.focusById(null, { updateHash: false });
   });
   document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape" || isTyping(event.target)) return;
-    if (hasPopups(app.popups)) {
-      closePopups(app, state, actions.redraw);
-      event.preventDefault();
+    if (isTyping(event.target)) return;
+    if (event.key === "Escape") {
+      if (hasPopups(app.popups)) {
+        closePopups(app, state, actions.redraw);
+        event.preventDefault();
+      }
       return;
     }
-    if (actions.focusParent()) {
+    if (event.key === "ArrowLeft") {
+      history.back();
+      event.preventDefault();
+    } else if (event.key === "ArrowRight") {
+      history.forward();
       event.preventDefault();
     }
   });

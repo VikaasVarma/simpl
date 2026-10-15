@@ -13,6 +13,16 @@ export const visualizationLoaders: Record<string, VisualizationLoader> = {
     import("./kvCacheOperation").then(
       (module) => module.createKvCacheOperation,
     ),
+  "gaussian-point-cloud": () =>
+    import("./gaussianSplats").then((module) => module.createGaussianSplats),
+  "gaussian-fuzzy-blobs": () =>
+    import("./gaussianSplats").then((module) => module.createGaussianSplats),
+  "gaussian-ray-compositing": () =>
+    import("./gaussianRay").then((module) => module.createGaussianRay),
+  "gaussian-projection": () =>
+    import("./gaussianProjection").then(
+      (module) => module.createGaussianProjection,
+    ),
   "causal-attention-mask": () =>
     import("./attentionMask").then((module) => module.createAttentionMask),
   "windowed-attention-mask": () =>

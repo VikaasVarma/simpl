@@ -75,40 +75,40 @@
 .graph-highlight--multi {
   background-color: color-mix(in srgb, var(--c0, var(--c)) 14%, transparent);
   background-repeat: no-repeat;
-  background-size: 100% 0.12em;
+  background-size: 100% 0.06em;
 }
 
 .graph-highlight--multi[data-conn-count="2"] {
-  padding-bottom: 0.32em;
+  padding-bottom: 0.2em;
   background-image:
     linear-gradient(var(--c0), var(--c0)), linear-gradient(var(--c1), var(--c1));
   background-position:
     0 100%,
-    0 calc(100% - 0.2em);
+    0 calc(100% - 0.1em);
 }
 
 .graph-highlight--multi[data-conn-count="3"] {
-  padding-bottom: 0.5em;
+  padding-bottom: 0.24em;
   background-image:
     linear-gradient(var(--c0), var(--c0)),
     linear-gradient(var(--c1), var(--c1)), linear-gradient(var(--c2), var(--c2));
   background-position:
     0 100%,
-    0 calc(100% - 0.19em),
-    0 calc(100% - 0.38em);
+    0 calc(100% - 0.1em),
+    0 calc(100% - 0.2em);
 }
 
 .graph-highlight--multi[data-conn-count="4"] {
-  padding-bottom: 0.66em;
+  padding-bottom: 0.3em;
   background-image:
     linear-gradient(var(--c0), var(--c0)),
     linear-gradient(var(--c1), var(--c1)),
     linear-gradient(var(--c2), var(--c2)), linear-gradient(var(--c3), var(--c3));
   background-position:
     0 100%,
-    0 calc(100% - 0.18em),
-    0 calc(100% - 0.36em),
-    0 calc(100% - 0.54em);
+    0 calc(100% - 0.08em),
+    0 calc(100% - 0.16em),
+    0 calc(100% - 0.24em);
 }
 
 .graph-highlight:hover {

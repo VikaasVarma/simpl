@@ -44,7 +44,7 @@ export function createBodyComponent(): BodyComponent {
     },
     { passive: true },
   );
-  element.addEventListener("click", handleCodeBlockClick);
+  element.addEventListener("click", (event) => handleBodyClick(body, event));
   element.addEventListener(
     "wheel",
     (event) => {
@@ -114,7 +114,16 @@ export function setBodyProgress(
   setVisualizationsActive(body.inner, reader && !body.element.hidden);
 }
 
-async function handleCodeBlockClick(event: MouseEvent): Promise<void> {
+async function handleBodyClick(body: BodyComponent, event: MouseEvent): Promise<void> {
+  const footnote = (event.target as Element | null)?.closest<HTMLAnchorElement>(
+    ".footnote-ref a, .footnote-backref",
+  );
+  if (footnote) {
+    event.preventDefault();
+    scrollToFootnote(body, footnote.hash);
+    return;
+  }
+
   const modeButton = (
     event.target as Element | null
   )?.closest<HTMLButtonElement>("[data-code-mode-toggle]");
@@ -140,6 +149,19 @@ async function handleCodeBlockClick(event: MouseEvent): Promise<void> {
   } catch {
     copied(button, "error");
   }
+}
+
+function scrollToFootnote(body: BodyComponent, hash: string): void {
+  const id = decodeURIComponent(hash.slice(1));
+  const target = [...body.inner.querySelectorAll<HTMLElement>("[id]")].find(
+    (element) => element.id === id,
+  );
+  if (!target) return;
+
+  const rect = body.element.getBoundingClientRect();
+  const scale = rect.height / body.element.offsetHeight || 1;
+  const top = body.element.scrollTop + (target.getBoundingClientRect().top - rect.top) / scale;
+  body.element.scrollTo({ top, behavior: "smooth" });
 }
 
 function setCodeMode(button: HTMLButtonElement): void {

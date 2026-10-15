@@ -11,7 +11,7 @@ import { redrawScene } from "./draw";
 import { createFocusController } from "./focus";
 import { bindSceneInput, resize } from "./input";
 import { bindDomNoteScroll } from "../rendering/dom/notes";
-import { focusParent, hierarchyPath } from "./hierarchy";
+import { hierarchyPath } from "./hierarchy";
 import { loadSettings, saveSettings } from "./settings";
 import type { GraphSceneApp, SceneState } from "./types";
 
@@ -60,7 +60,6 @@ export async function mountGraphScene(): Promise<{
     redraw,
     focusOn: focus.focusOn,
     focusById: focus.focusById,
-    focusParent: () => focusParent(app, state, focus.focusById),
   });
   bindHud(
     app.hud,
