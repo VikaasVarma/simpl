@@ -7,7 +7,7 @@ import {
 const SETTINGS_KEY = "working-notes:reader-settings:v1";
 const DEFAULT_SETTINGS: HudSettings = {
   theme: "light",
-  textScale: 1,
+  textScale: 0.88,
   lineWidth: 460,
 };
 

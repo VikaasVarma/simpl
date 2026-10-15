@@ -8,7 +8,7 @@ import {
 import { PALETTE } from "../lib/visualizations/core/palette";
 import type { VisualizationFactory, VisualizationHandle } from "./types";
 
-const SPLAT_URL = "/assets/splats/avocado.sog";
+const SPLAT_URL = "/assets/splats/avocado-743e07bcdfa6.sog";
 const MODEL_HEIGHT = 1.8;
 const SH_C0 = 0.28209479177387814;
 const UPRIGHT_ROTATION = new pc.Quat(-Math.SQRT1_2, 0, 0, Math.SQRT1_2);
