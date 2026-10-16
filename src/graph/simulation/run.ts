@@ -41,20 +41,28 @@ export function settleSimulation(
   seconds: number,
   run: SimulationRun = SIMULATION.runs.initial,
 ): void {
+  if (seconds <= 0) return;
+
   const fps = 60;
-  const frames = Math.max(
-    1,
-    Math.round(Math.min(seconds, run.durationMs / 1000) * fps),
-  );
+  const durationMs = seconds * 1000;
+  const settleRun = {
+    ...run,
+    durationMs,
+    taperMs: Math.min(run.taperMs, durationMs),
+  };
+  const frames = Math.max(1, Math.round(seconds * fps));
 
   simulation.alpha(run.alpha).alphaTarget(run.alpha).stop();
   for (let frame = 0; frame < frames; frame++) {
-    simulation.alphaTarget(runAlpha(run, (frame / fps) * 1000));
+    simulation.alphaTarget(runAlpha(settleRun, (frame / fps) * 1000));
     simulation.tick(SIMULATION.simSpeed);
   }
 }
 
-function runAlpha(run: SimulationRun, elapsedMs: number): number {
+function runAlpha(
+  run: { alpha: number; durationMs: number; taperMs: number },
+  elapsedMs: number,
+): number {
   const t = (elapsedMs - (run.durationMs - run.taperMs)) / run.taperMs;
   return lerp(run.alpha, 0, smoothstep(t));
 }

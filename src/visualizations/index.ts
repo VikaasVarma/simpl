@@ -2,6 +2,9 @@ import type { VisualizationFactory } from "./types";
 
 export type VisualizationLoader = () => Promise<VisualizationFactory>;
 
+const loadGaussianSplats: VisualizationLoader = () =>
+  import("./gaussianSplats").then((module) => module.createGaussianSplats);
+
 export const visualizationLoaders: Record<string, VisualizationLoader> = {
   "attention-mask-pair": () =>
     import("./attentionMask").then((module) => module.createAttentionMask),
@@ -13,10 +16,9 @@ export const visualizationLoaders: Record<string, VisualizationLoader> = {
     import("./kvCacheOperation").then(
       (module) => module.createKvCacheOperation,
     ),
-  "gaussian-point-cloud": () =>
-    import("./gaussianSplats").then((module) => module.createGaussianSplats),
-  "gaussian-fuzzy-blobs": () =>
-    import("./gaussianSplats").then((module) => module.createGaussianSplats),
+  "gaussian-point-cloud": loadGaussianSplats,
+  "gaussian-fuzzy-blobs": loadGaussianSplats,
+  "bake-scenes": loadGaussianSplats,
   "gaussian-ray-compositing": () =>
     import("./gaussianRay").then((module) => module.createGaussianRay),
   "gaussian-projection": () =>

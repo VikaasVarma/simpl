@@ -22,7 +22,8 @@
   aspect-ratio: 3.6 / 1;
 }
 
-.graph-dom-note__body .viz-mount[data-viz="gaussian-point-cloud"] {
+.graph-dom-note__body .viz-mount[data-viz="gaussian-point-cloud"],
+.graph-dom-note__body .viz-mount[data-viz="bake-scenes"] {
   aspect-ratio: 1 / 1;
   max-width: 80%;
   margin: 0 auto;
@@ -51,6 +52,56 @@
   background: var(--bg);
   color: var(--text-muted);
   cursor: pointer;
+}
+
+.graph-dom-note__body .gaussian-scene-selector {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  max-width: calc(100% - 52px);
+  padding: 5px 24px 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--text);
+  font: 400 0.75em var(--font-mono);
+}
+
+.graph-dom-note__body .gaussian-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  color: var(--text-muted);
+  font: 400 0.8em var(--font-mono);
+  pointer-events: none;
+}
+
+.graph-dom-note__body .gaussian-loading::before {
+  width: 11px;
+  height: 11px;
+  border: 1px solid var(--border);
+  border-top-color: var(--text);
+  border-radius: 50%;
+  content: "";
+  animation: gaussian-loading 0.8s linear infinite;
+}
+
+.graph-dom-note__body .gaussian-loading--error::before {
+  display: none;
+}
+
+.graph-dom-note__body .gaussian-loading[hidden] {
+  display: none;
+}
+
+@keyframes gaussian-loading {
+  to { transform: rotate(1turn); }
 }
 
 .graph-dom-note__body .gaussian-pause:hover {

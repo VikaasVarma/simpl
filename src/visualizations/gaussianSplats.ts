@@ -9,6 +9,56 @@ import { PALETTE } from "../lib/visualizations/core/palette";
 import type { VisualizationFactory, VisualizationHandle } from "./types";
 
 const SPLAT_URL = "/assets/splats/avocado-743e07bcdfa6.sog";
+const BAKE_SCENES = [
+  {
+    id: "cornell",
+    name: "Cornell Box",
+    url: "/assets/splats/bake-cornell-df02ee4c015d.sog",
+    caption:
+      "Cycles at 4096 samples per pixel with exposure 4.\nSplats baked with SH degree 0, 16 directions per splat, 32 samples per direction, 10% SH smoothing.",
+    shDegree: 0,
+  },
+  {
+    id: "damaged-helmet",
+    name: "Damaged Helmet",
+    url: "/assets/splats/bake-helmet-sh3-b023d0b69706.sog",
+    caption:
+      "Cycles at 4096 samples per pixel with exposure 0.\nSplats baked with SH degree 10, 128 directions per splat, 32 samples per direction.",
+    shDegree: 10,
+  },
+  {
+    id: "avocado",
+    name: "Avocado",
+    url: "/assets/splats/bake-avocado-c888f9f9040f.sog",
+    caption:
+      "Cycles at 4096 samples per pixel with exposure 0.\nSplats baked on a projected grid with SH degree 2, 16 directions per splat, 128 samples per direction.",
+    shDegree: 2,
+  },
+  {
+    id: "boombox",
+    name: "Boom Box",
+    url: "/assets/splats/bake-boombox-sh3-c8fb54be134a.sog",
+    caption:
+      "Cycles at 4096 samples per pixel with exposure 0.\nSplats baked with SH degree 8, 128 directions per splat, 16 samples per direction.",
+    shDegree: 8,
+  },
+  {
+    id: "duck",
+    name: "Duck",
+    url: "/assets/splats/bake-duck-b616dce876f8.sog",
+    caption:
+      "Phong at 1 sample per pixel.\nSplats baked with SH degree 0, 1 direction per splat, 1 sample per direction.",
+    shDegree: 0,
+  },
+  {
+    id: "fish",
+    name: "Barramundi Fish",
+    url: "/assets/splats/bake-fish-ebe40cc64fc1.sog",
+    caption:
+      "Phong at 1 sample per pixel.\nSplats baked with SH degree 0, 1 direction per splat, 1 sample per direction.",
+    shDegree: 0,
+  },
+] as const;
 const MODEL_HEIGHT = 1.8;
 const SH_C0 = 0.28209479177387814;
 const UPRIGHT_ROTATION = new pc.Quat(-Math.SQRT1_2, 0, 0, Math.SQRT1_2);
@@ -17,7 +67,7 @@ export const createGaussianSplats: VisualizationFactory = (canvas, mount) => {
   const slug = mount.dataset.viz ?? "gaussian-point-cloud";
   return slug === "gaussian-fuzzy-blobs"
     ? createFuzzyBlobs(canvas, mount)
-    : createSplatCompare(canvas, mount);
+    : createSplatCompare(canvas, mount, slug === "bake-scenes");
 };
 
 const ORBIT_RADIUS = 3.3;
@@ -65,7 +115,12 @@ const POINTS_FRAGMENT_SHADER = `
 function createSplatCompare(
   canvas: HTMLCanvasElement,
   mount: HTMLElement,
+  sceneSelector = false,
 ): VisualizationHandle {
+  let bakedScene: (typeof BAKE_SCENES)[number] | undefined = sceneSelector
+    ? BAKE_SCENES.find(({ id }) => id === "avocado")
+    : undefined;
+  const singleScene = sceneSelector;
   const app = new pc.Application(canvas, {
     graphicsDeviceOptions: { alpha: true, antialias: true },
   });
@@ -83,6 +138,33 @@ function createSplatCompare(
   pauseButton.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3v10M11 3v10"/></svg>`;
   mount.append(pauseButton);
 
+  const selector = sceneSelector ? document.createElement("select") : null;
+  if (selector) {
+    selector.className = "gaussian-scene-selector";
+    selector.setAttribute("aria-label", "Example scene");
+    selector.innerHTML = BAKE_SCENES.map(
+      ({ id, name }) => `<option value="${id}">${name}</option>`,
+    ).join("");
+    selector.value = bakedScene?.id ?? "";
+    mount.append(selector);
+  }
+  const caption = mount.closest("figure")?.querySelector<HTMLElement>(".viz-caption");
+  function setSceneCaption(scene: (typeof BAKE_SCENES)[number]): void {
+    if (!caption) return;
+    caption.textContent =
+      scene.caption +
+      (scene.shDegree > 3
+        ? `\nNot full SH resolution: viewer uses degree 3 (source degree ${scene.shDegree}).`
+        : "");
+  }
+  if (bakedScene) setSceneCaption(bakedScene);
+
+  const loading = document.createElement("div");
+  loading.className = "gaussian-loading";
+  loading.setAttribute("role", "status");
+  loading.textContent = `Loading ${bakedScene?.name ?? "Avocado"}`;
+  mount.append(loading);
+
   const pointsLayer = new pc.Layer({ name: "points" });
   const splatsLayer = new pc.Layer({ name: "splats" });
   app.scene.layers.insert(pointsLayer, 0);
@@ -90,7 +172,7 @@ function createSplatCompare(
 
   const cameraRig = new pc.Entity("camera-rig");
   app.root.addChild(cameraRig);
-  const cameras = [pointsLayer, splatsLayer].map((layer) => {
+  const cameras = (singleScene ? [splatsLayer] : [pointsLayer, splatsLayer]).map((layer) => {
     const entity = new pc.Entity(`camera-${layer.name}`);
     entity.addComponent("camera", {
       layers: [layer.id],
@@ -110,38 +192,45 @@ function createSplatCompare(
       ._camera._scissorRectClear = true;
   }
 
-  // Keep the full projection and clip each camera to its side of the wipe.
   function applyAspect(width: number, height: number): void {
     const aspect = width / height;
     for (const camera of cameras) camera.aspectRatio = aspect;
   }
   applyAspect(mount.clientWidth || 1, mount.clientHeight || 1);
 
-  let divider = 0.5;
   function applyRects(): void {
-    cameras[0].scissorRect = new pc.Vec4(0, 0, divider, 1);
-    cameras[1].scissorRect = new pc.Vec4(divider, 0, 1 - divider, 1);
+    if (singleScene) return;
+    cameras[0].scissorRect = new pc.Vec4(0, 0, 0.5, 1);
+    cameras[1].scissorRect = new pc.Vec4(0.5, 0, 0.5, 1);
   }
   applyRects();
 
   let disposed = false;
-  const density = document.createElement("input");
-  density.className = "gaussian-density";
-  density.type = "range";
-  density.min = "0";
-  density.max = "1000";
-  density.value = "1000";
-  density.setAttribute("aria-label", "Visible point density");
-  mount.parentElement?.insertBefore(density, mount.nextElementSibling);
+  const density = singleScene ? null : document.createElement("input");
+  if (density) {
+    density.className = "gaussian-density";
+    density.type = "range";
+    density.min = "0";
+    density.max = "1000";
+    density.value = "1000";
+    density.setAttribute("aria-label", "Visible point density");
+    mount.parentElement?.insertBefore(density, mount.nextElementSibling);
+  }
   let totalPoints = 0;
   let pointPrimitive: { count: number } | undefined;
   let pointOrder: Uint32Array | undefined;
   let mappedPointCount = 0;
   let splatInstance: pc.GSplatInstance | null = null;
+  let pointEntity: pc.Entity | null = null;
+  let splatEntity: pc.Entity | null = null;
+  let pointMesh: pc.Mesh | null = null;
+  let pointMaterial: pc.ShaderMaterial | null = null;
+  let splatAsset: pc.Asset | null = null;
+  let loadSequence = 0;
   function selectedPointCount(): number {
     return Math.max(
       1,
-      Math.round(Math.exp((Number(density.value) / 1000) * Math.log(totalPoints))),
+      Math.round(Math.exp(((Number(density?.value) || 0) / 1000) * Math.log(totalPoints))),
     );
   }
   function updatePointCount(): void {
@@ -154,17 +243,65 @@ function createSplatCompare(
       sorter.setMapping(pointOrder.slice(0, count));
     }
   }
-  density.addEventListener("input", updatePointCount);
+  density?.addEventListener("input", updatePointCount);
 
-  const splatAsset = new pc.Asset("avocado-splat", "gsplat", { url: SPLAT_URL });
-  app.assets.add(splatAsset);
-  app.assets.load(splatAsset);
-  splatAsset.ready(async () => {
-    if (disposed) return;
-    const data = (splatAsset.resource as pc.GSplatResource)
+  async function loadScene(scene: (typeof BAKE_SCENES)[number] | undefined): Promise<void> {
+    const sequence = ++loadSequence;
+    const url = scene?.url ?? SPLAT_URL;
+    const name = scene?.name ?? "Avocado";
+    loading.classList.remove("gaussian-loading--error");
+    loading.textContent = `Loading ${name}`;
+    loading.hidden = false;
+    const asset = new pc.Asset(`${name}-splat`, "gsplat", { url });
+    app.assets.add(asset);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        asset.once("load", resolve);
+        asset.once("error", reject);
+        app.assets.load(asset);
+      });
+    } catch (error) {
+      app.assets.remove(asset);
+      asset.unload();
+      if (sequence === loadSequence) {
+        loading.classList.add("gaussian-loading--error");
+        loading.textContent = `Could not load ${name}`;
+      }
+      console.error(`Could not load baked scene: ${name}`, error);
+      return;
+    }
+    const data = (asset.resource as pc.GSplatResource)
       .gsplatData as pc.GSplatSogData;
-    const decoded = await data.decompress();
-    if (disposed) return;
+    let decoded: Awaited<ReturnType<typeof data.decompress>>;
+    try {
+      decoded = await data.decompress();
+    } catch (error) {
+      app.assets.remove(asset);
+      asset.unload();
+      if (sequence === loadSequence) {
+        loading.classList.add("gaussian-loading--error");
+        loading.textContent = `Could not decode ${name}`;
+      }
+      console.error(`Could not decode baked scene: ${name}`, error);
+      return;
+    }
+    if (disposed || sequence !== loadSequence) {
+      app.assets.remove(asset);
+      asset.unload();
+      return;
+    }
+    if (pointEntity) app.root.removeChild(pointEntity);
+    if (splatEntity) app.root.removeChild(splatEntity);
+    pointEntity?.destroy();
+    splatEntity?.destroy();
+    pointMesh?.destroy();
+    pointMaterial?.destroy();
+    if (splatAsset) {
+      app.assets.remove(splatAsset);
+      splatAsset.unload();
+    }
+    splatAsset = asset;
+    mappedPointCount = 0;
     totalPoints = data.numSplats;
     const x = decoded.getProp("x");
     const y = decoded.getProp("y");
@@ -173,11 +310,11 @@ function createSplatCompare(
     const green = decoded.getProp("f_dc_1");
     const blue = decoded.getProp("f_dc_2");
     const opacity = decoded.getProp("opacity");
-    const sourcePositions = new Float32Array(totalPoints * 3);
+    const sourcePositions = singleScene ? null : new Float32Array(totalPoints * 3);
     const min = [Infinity, Infinity, Infinity];
     const max = [-Infinity, -Infinity, -Infinity];
     for (let i = 0; i < totalPoints; i++) {
-      sourcePositions.set([x[i], y[i], z[i]], i * 3);
+      sourcePositions?.set([x[i], y[i], z[i]], i * 3);
       min[0] = Math.min(min[0], x[i]);
       min[1] = Math.min(min[1], y[i]);
       min[2] = Math.min(min[2], z[i]);
@@ -192,72 +329,79 @@ function createSplatCompare(
       -center[2] * scale,
       center[1] * scale,
     );
-    // One stable permutation drives both renderers' prefixes.
-    const pointOrderData = Uint32Array.from(
-      { length: totalPoints },
-      (_, i) => i,
-    );
-    let seed = 0x6d2b79f5;
-    for (let i = totalPoints - 1; i > 0; i--) {
-      seed ^= seed << 13;
-      seed ^= seed >>> 17;
-      seed ^= seed << 5;
-      const j = (seed >>> 0) % (i + 1);
-      [pointOrderData[i], pointOrderData[j]] = [pointOrderData[j], pointOrderData[i]];
+    if (sourcePositions) {
+      // One stable permutation drives both renderers' prefixes.
+      const pointOrderData = Uint32Array.from({ length: totalPoints }, (_, i) => i);
+      let seed = 0x6d2b79f5;
+      for (let i = totalPoints - 1; i > 0; i--) {
+        seed ^= seed << 13;
+        seed ^= seed >>> 17;
+        seed ^= seed << 5;
+        const j = (seed >>> 0) % (i + 1);
+        [pointOrderData[i], pointOrderData[j]] = [pointOrderData[j], pointOrderData[i]];
+      }
+      pointOrder = pointOrderData;
+
+      const positions = new Float32Array(totalPoints * 3);
+      const colors = new Uint8Array(totalPoints * 4);
+      const colorByte = (value: number) =>
+        Math.max(0, Math.min(255, Math.round((value * SH_C0 + 0.5) * 255)));
+      for (let i = 0; i < totalPoints; i++) {
+        const source = pointOrderData[i];
+        positions.set(sourcePositions.subarray(source * 3, source * 3 + 3), i * 3);
+        colors[i * 4] = colorByte(red[source]);
+        colors[i * 4 + 1] = colorByte(green[source]);
+        colors[i * 4 + 2] = colorByte(blue[source]);
+        const alpha = decoded.activated
+          ? opacity[source]
+          : 1 / (1 + Math.exp(-opacity[source]));
+        colors[i * 4 + 3] = Math.round(alpha * 255);
+      }
+
+      pointMesh = new pc.Mesh(app.graphicsDevice);
+      pointMesh.setPositions(positions);
+      pointMesh.setColors32(colors);
+      pointMesh.update(pc.PRIMITIVE_POINTS);
+      pointPrimitive = pointMesh.primitive[0];
+      pointMaterial = new pc.ShaderMaterial({
+        uniqueName: `${name}Points`,
+        attributes: { aPosition: pc.SEMANTIC_POSITION, aColor: pc.SEMANTIC_COLOR },
+        vertexGLSL: POINTS_VERTEX_SHADER,
+        fragmentGLSL: POINTS_FRAGMENT_SHADER,
+      });
+      pointMaterial.blendType = pc.BLEND_NORMAL;
+      pointMaterial.depthWrite = false;
+      pointEntity = new pc.Entity(`${name}-points`);
+      pointEntity.addComponent("render", {
+        meshInstances: [new pc.MeshInstance(pointMesh, pointMaterial)],
+        layers: [pointsLayer.id],
+      });
+      pointEntity.setLocalScale(scale, scale, scale);
+      pointEntity.setPosition(modelPosition);
+      pointEntity.setRotation(UPRIGHT_ROTATION);
+      app.root.addChild(pointEntity);
     }
-    pointOrder = pointOrderData;
 
-    const positions = new Float32Array(totalPoints * 3);
-    const colors = new Uint8Array(totalPoints * 4);
-    const colorByte = (value: number) =>
-      Math.max(0, Math.min(255, Math.round((value * SH_C0 + 0.5) * 255)));
-    for (let i = 0; i < totalPoints; i++) {
-      const source = pointOrderData[i];
-      positions.set(sourcePositions.subarray(source * 3, source * 3 + 3), i * 3);
-      colors[i * 4] = colorByte(red[source]);
-      colors[i * 4 + 1] = colorByte(green[source]);
-      colors[i * 4 + 2] = colorByte(blue[source]);
-      const alpha = decoded.activated
-        ? opacity[source]
-        : 1 / (1 + Math.exp(-opacity[source]));
-      colors[i * 4 + 3] = Math.round(alpha * 255);
-    }
-
-    const mesh = new pc.Mesh(app.graphicsDevice);
-    mesh.setPositions(positions);
-    mesh.setColors32(colors);
-    mesh.update(pc.PRIMITIVE_POINTS);
-    pointPrimitive = mesh.primitive[0];
-    const pointMaterial = new pc.ShaderMaterial({
-      uniqueName: "AvocadoPoints",
-      attributes: { aPosition: pc.SEMANTIC_POSITION, aColor: pc.SEMANTIC_COLOR },
-      vertexGLSL: POINTS_VERTEX_SHADER,
-      fragmentGLSL: POINTS_FRAGMENT_SHADER,
-    });
-    pointMaterial.blendType = pc.BLEND_NORMAL;
-    pointMaterial.depthWrite = false;
-    const pointEntity = new pc.Entity("avocado-points");
-    pointEntity.addComponent("render", {
-      meshInstances: [new pc.MeshInstance(mesh, pointMaterial)],
-      layers: [pointsLayer.id],
-    });
-    pointEntity.setLocalScale(scale, scale, scale);
-    pointEntity.setPosition(modelPosition);
-    pointEntity.setRotation(UPRIGHT_ROTATION);
-    app.root.addChild(pointEntity);
-
-    const entity = new pc.Entity("avocado-splat");
-    entity.addComponent("gsplat", {
-      asset: splatAsset,
+    splatEntity = new pc.Entity(`${name}-splat`);
+    splatEntity.addComponent("gsplat", {
+      asset,
       layers: [splatsLayer.id],
       unified: false,
     });
-    entity.setLocalScale(scale, scale, scale);
-    entity.setPosition(modelPosition);
-    entity.setRotation(UPRIGHT_ROTATION);
-    app.root.addChild(entity);
-    splatInstance = entity.gsplat!.instance;
+    splatEntity.setLocalScale(scale, scale, scale);
+    splatEntity.setPosition(modelPosition);
+    splatEntity.setRotation(UPRIGHT_ROTATION);
+    app.root.addChild(splatEntity);
+    splatInstance = splatEntity.gsplat!.instance;
     updatePointCount();
+    loading.hidden = true;
+  }
+  void loadScene(bakedScene);
+  selector?.addEventListener("change", () => {
+    bakedScene = BAKE_SCENES.find(({ id }) => id === selector.value);
+    if (!bakedScene) return;
+    setSceneCaption(bakedScene);
+    void loadScene(bakedScene);
   });
 
   const stopResize = onMountResize(mount, (width, height) => {
@@ -266,65 +410,73 @@ function createSplatCompare(
     applyAspect(width, height);
   });
 
-  const dividerEl = document.createElement("div");
-  dividerEl.style.position = "absolute";
-  dividerEl.style.top = "0";
-  dividerEl.style.bottom = "0";
-  dividerEl.style.width = "20px";
-  dividerEl.style.marginLeft = "-10px";
-  dividerEl.style.cursor = "ew-resize";
-  dividerEl.style.left = `${divider * 100}%`;
-  dividerEl.style.zIndex = "2";
-  const dividerLine = document.createElement("div");
-  dividerLine.style.position = "absolute";
-  dividerLine.style.left = "50%";
-  dividerLine.style.top = "0";
-  dividerLine.style.bottom = "0";
-  dividerLine.style.width = "1px";
-  dividerLine.style.marginLeft = "-0.5px";
-  dividerLine.style.background = "rgba(44,40,37,0.3)";
-  const dividerHandle = document.createElement("div");
-  dividerHandle.style.position = "absolute";
-  dividerHandle.style.left = "50%";
-  dividerHandle.style.top = "50%";
-  dividerHandle.style.width = "14px";
-  dividerHandle.style.height = "14px";
-  dividerHandle.style.marginLeft = "-7px";
-  dividerHandle.style.marginTop = "-7px";
-  dividerHandle.style.borderRadius = "50%";
-  dividerHandle.style.background = "rgba(252,251,245,0.92)";
-  dividerHandle.style.border = "1px solid rgba(44,40,37,0.4)";
-  dividerEl.appendChild(dividerLine);
-  dividerEl.appendChild(dividerHandle);
-  mount.appendChild(dividerEl);
-
+  const dividerEl = singleScene ? null : document.createElement("div");
+  if (dividerEl) {
+    Object.assign(dividerEl.style, {
+      position: "absolute",
+      top: "0",
+      bottom: "0",
+      width: "20px",
+      marginLeft: "-10px",
+      cursor: "ew-resize",
+      left: "50%",
+      zIndex: "2",
+    });
+    const line = document.createElement("div");
+    Object.assign(line.style, {
+      position: "absolute",
+      left: "50%",
+      top: "0",
+      bottom: "0",
+      width: "1px",
+      marginLeft: "-0.5px",
+      background: "rgba(44,40,37,0.3)",
+    });
+    const handle = document.createElement("div");
+    Object.assign(handle.style, {
+      position: "absolute",
+      left: "50%",
+      top: "50%",
+      width: "14px",
+      height: "14px",
+      marginLeft: "-7px",
+      marginTop: "-7px",
+      borderRadius: "50%",
+      background: "rgba(252,251,245,0.92)",
+      border: "1px solid rgba(44,40,37,0.4)",
+    });
+    dividerEl.append(line, handle);
+    mount.append(dividerEl);
+  }
   let draggingDivider = false;
   function onDividerPointerDown(event: PointerEvent): void {
+    if (!dividerEl) return;
     event.stopPropagation();
     draggingDivider = true;
     dividerEl.setPointerCapture(event.pointerId);
   }
   function onDividerPointerMove(event: PointerEvent): void {
-    if (!draggingDivider) return;
+    if (!draggingDivider || !dividerEl) return;
     event.stopPropagation();
     const rect = mount.getBoundingClientRect();
-    divider = Math.max(
+    const divider = Math.max(
       0.04,
       Math.min(0.96, (event.clientX - rect.left) / rect.width),
     );
     dividerEl.style.left = `${divider * 100}%`;
-    applyRects();
+    cameras[0].scissorRect = new pc.Vec4(0, 0, divider, 1);
+    cameras[1].scissorRect = new pc.Vec4(divider, 0, 1 - divider, 1);
   }
   function onDividerPointerUp(event: PointerEvent): void {
-    if (!draggingDivider) return;
+    if (!draggingDivider || !dividerEl) return;
     event.stopPropagation();
     draggingDivider = false;
     dividerEl.releasePointerCapture(event.pointerId);
   }
-  dividerEl.addEventListener("pointerdown", onDividerPointerDown);
-  dividerEl.addEventListener("pointermove", onDividerPointerMove);
-  dividerEl.addEventListener("pointerup", onDividerPointerUp);
-  dividerEl.addEventListener("pointercancel", onDividerPointerUp);
+  dividerEl?.addEventListener("pointerdown", onDividerPointerDown);
+  dividerEl?.addEventListener("pointermove", onDividerPointerMove);
+  dividerEl?.addEventListener("pointerup", onDividerPointerUp);
+  dividerEl?.addEventListener("pointercancel", onDividerPointerUp);
 
   let orbitAngle = 0;
   let locked = false;
@@ -482,19 +634,25 @@ function createSplatCompare(
       stopResize();
       pauseButton.removeEventListener("click", togglePause);
       pauseButton.remove();
+      selector?.remove();
+      loading.remove();
       canvas.removeEventListener("click", onClick);
       canvas.removeEventListener("pointerdown", onPointerDownCapture);
       document.removeEventListener("pointerlockchange", onPointerLockChange);
       document.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
-      dividerEl.removeEventListener("pointerdown", onDividerPointerDown);
-      dividerEl.removeEventListener("pointermove", onDividerPointerMove);
-      dividerEl.removeEventListener("pointerup", onDividerPointerUp);
-      dividerEl.removeEventListener("pointercancel", onDividerPointerUp);
-      dividerEl.remove();
-      density.removeEventListener("input", updatePointCount);
-      density.remove();
+      dividerEl?.removeEventListener("pointerdown", onDividerPointerDown);
+      dividerEl?.removeEventListener("pointermove", onDividerPointerMove);
+      dividerEl?.removeEventListener("pointerup", onDividerPointerUp);
+      dividerEl?.removeEventListener("pointercancel", onDividerPointerUp);
+      dividerEl?.remove();
+      density?.removeEventListener("input", updatePointCount);
+      density?.remove();
+      if (splatAsset) {
+        app.assets.remove(splatAsset);
+        splatAsset.unload();
+      }
       app.destroy();
     },
   };
